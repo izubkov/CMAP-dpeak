@@ -1,3 +1,22 @@
+### dpeak matlab routine:
+`
+constants and params (detect_lxb_peaks_single):
+
+https://github.com/cmap/cmapM/blob/db40b0af5d3440c43bc4e8c6947399d9432cbc43/%2Bcmapm/%40Pipeline/private/detect_lxb_peaks_single.m#L49
+
+ksdensity (kernel smoothing based on normal kernel function)
+
+https://www.mathworks.com/help/stats/ksdensity.html
+
+findpeaks
+
+www.mathworks.com/help/signal/ref/findpeaks.html
+
+UNI:
+
+github.com/cmap/cmapM/blob/db40b0af5d3440c43bc4e8c6947399d9432cbc43/%2Bcmapm/%40Pipeline/private/dpeak_pipe.m#L62
+
+
 Baseline:
 
 Test #1 time [sec] = 163
