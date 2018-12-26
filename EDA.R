@@ -1,4 +1,5 @@
 library(tidyverse)
+library(plotly)
 library(purrr)
 
 # load all ----------------------------------------------------------------
@@ -12,7 +13,7 @@ LIT.files <-
 DPK.all.txt <-
   map_dfr(DPK.files, read_tsv)
 LIT.all.txt <-
-  map_dfr(DPK.files, read_tsv)
+  map_dfr(LIT.files, read_tsv)
 
 all(DPK.all.txt %>%
       select(barcode_id) %>%
@@ -36,37 +37,7 @@ LIT.DE.gct <- read_tsv("competitor_pack_v2/ground-truth/LITMUS.KD017_A549_96H_X1
 DPK.out.gct <- read_tsv("competitor_pack_v2/output/DPK.CP001_A549_24H_X1_B42.gct", skip = 2)
 LIT.out.gct <- read_tsv("competitor_pack_v2/output/LITMUS.KD017_A549_96H_X1_B42.gct", skip = 2)
 
-read_FI <- function(file, list_barcodes = T) {
-  cat("File", (file %>% str_split("_"))[[1]][c(7, 12)], "\n" )
-  d <-
-    read_tsv(file,
-             col_types = "dd",
-             col_names = c("barcode_id", "FI"), skip = 1)
-  li <-
-    d %>%
-    distinct(barcode_id) %>%
-    select(barcode_id) %>%
-    unlist(use.names = F)
-  if(list_barcodes) print(li)
-  return(d)
-}
-
-hist_FI <- function(d, bid) {
-  ids <- d %>% distinct(barcode_id) %>% unlist(use.names = F)
-  d %>%
-    filter(barcode_id == ids[bid]) %>%
-    select(FI) %>%
-    unlist(use.names = F) %>%
-    hist(breaks = length(.))
-}
-
-extract_name <- function(filename) {
-  txt <- str_split(filename, "_")[[1]][12]
-   %>%
-    str_split(".")[[1]][1]
-}
-
-DPK.files[1] %>% read_FI() %>% hist_FI(490)
+# hist. of individual and all ---------------------------------------------
 
 hist_FI <- function(filenames, gct, out, txt) {
   cat("Barcodes of", txt, "\n")
@@ -108,8 +79,14 @@ hist_FI <- function(filenames, gct, out, txt) {
   out_lo <- out[out$id == gene_lo, ][txt][[1]]
   abline(v = ground_hi, col = "red")
   abline(v = ground_lo, col = "blue")
-  abline(v = out_hi, col = "darkred")
-  abline(v = out_lo, col = "darkblue")
+  abline(v = out_hi, col = "darkred", lty = "dotted")
+  abline(v = out_lo, col = "darkblue", lty = "dotted")
   cat("Ground hi/lo:", ground_hi, ground_lo, "\n")
   cat("Matlab out hi/lo:", out_hi, out_lo)
+}
+
+hist_FI_all <- function(d.all, bid) {
+  d.all %>%
+    filter(barcode_id == bid) %>%
+    plot_ly(x = ~FI, type = "histogram")
 }
