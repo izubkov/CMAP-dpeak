@@ -109,9 +109,14 @@ kmeans_2_1_sizes <- function(d.all) {
 
   sizes_2_1 <- d.all %>%
     group_by(barcode_id) %>%
-    summarise(calc_kmeans(FI)) -> result
+    summarise(ratio = calc_kmeans(FI)) -> result
   toc()
   sizes_2_1
 }
 
-# TODO: plot outliers
+ratios <- kmeans_2_1_sizes(DPK.all.txt)
+outliers <- ratios[which(ratios$ratio > 10), ] %>% .[["barcode_id"]]
+
+for(i in seq_along(1:length(outliers))) {
+  print(hist_FI_all(DPK.all.txt, outliers[i]))
+}
