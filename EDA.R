@@ -1,6 +1,7 @@
 library(tidyverse)
 library(plotly)
 library(purrr)
+library(tictoc)
 
 # load all ----------------------------------------------------------------
 
@@ -90,3 +91,27 @@ hist_FI_all <- function(d.all, bid) {
     filter(barcode_id == bid) %>%
     plot_ly(x = ~FI, type = "histogram")
 }
+
+# clusters ----------------------------------------------------------------
+
+library(Gmedian)
+
+kmeans_2_1_sizes <- function(d.all) {
+  tic("kmeans_2_1_sizes")
+  calc_kmeans <- function(x) {
+    sizes <- kmeans(x, 2, algorithm = "MacQueen") %>% .[["size"]]
+    if(sizes[1] > sizes[2]) {
+      sizes[1] / sizes[2]
+    } else {
+      sizes[2] / sizes[1]
+    }
+  }
+
+  sizes_2_1 <- d.all %>%
+    group_by(barcode_id) %>%
+    summarise(calc_kmeans(FI)) -> result
+  toc()
+  sizes_2_1
+}
+
+# TODO: plot outliers
