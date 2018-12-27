@@ -30,12 +30,15 @@ exec_test() {
 
 exec_R() {
   Rscript exec.R \
-    input/$1 \
+    $1 \
     output
 }
 
 # Cleans output folder.
-rm ./output/* -rf
+#
+# TODO: docker scorer somehow writes as root
+#
+sudo rm ./output/* -rf
 
 START_TIME=`date +%s`
 #exec_test $TEST_CASE_1

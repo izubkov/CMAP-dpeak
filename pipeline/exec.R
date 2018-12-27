@@ -1,6 +1,7 @@
-#! /usr/bin/env Rscript
+#!/usr/bin/env Rscript
 
 library(magrittr)
+library(stringr)
 library(cmapR)
 
 args <- commandArgs(trailingOnly=TRUE)
@@ -9,10 +10,14 @@ stopifnot(length(args) == 2)
 print(args[1])
 print(args[2])
 
-cmapR::parse.gctx("ground-truth/DPK.CP001_A549_24H_X1_B42_DECONV_UNI.gct") %>%
-  cmapR::write.gct("output/DPK.CP001_A549_24H_X1_B42.gct", appenddim = F)
-cmapR::parse.gctx("ground-truth/LITMUS.KD017_A549_96H_X1_B42_DECONV_UNI.gct") %>%
-  cmapR::write.gct("output/LITMUS.KD017_A549_96H_X1_B42.gct", appenddim = F)
+#
+# TODO: can rely on list of files inside input folder only
+# TODO: output filenames may be different too
+#
+cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
+  cmapR::write.gct(str_c("output/", args[1], ".gct"), appenddim = F)
+
+print("OK DONE")
 
 # install -----------------------------------------------------------------
 
