@@ -97,7 +97,7 @@ hist_FI_all <- function(d.all, bid) {
 library(Gmedian)
 
 kmeans_2_1_sizes <- function(d.all) {
-  tic("kmeans_2_1_sizes")
+
   calc_kmeans <- function(x) {
     sizes <- kmeans(x, 2, algorithm = "MacQueen") %>% .[["size"]]
     if(sizes[1] > sizes[2]) {
@@ -107,10 +107,14 @@ kmeans_2_1_sizes <- function(d.all) {
     }
   }
 
+  tic("kmeans_2_1_sizes")
+
   sizes_2_1 <- d.all %>%
     group_by(barcode_id) %>%
     summarise(ratio = calc_kmeans(FI)) -> result
+
   toc()
+
   sizes_2_1
 }
 
