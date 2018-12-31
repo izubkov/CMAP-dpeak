@@ -1,4 +1,5 @@
 library(tidyverse)
+library(magrittr)
 library(plotly)
 library(purrr)
 library(tictoc)
@@ -111,7 +112,8 @@ kmeans_2_1_sizes <- function(d.all) {
 
   sizes_2_1 <- d.all %>%
     group_by(barcode_id) %>%
-    summarise(ratio = calc_kmeans(FI)) -> result
+    #filter(FI > 0.005 * max(FI)) %>%
+    summarise(ratio = calc_kmeans(FI))
 
   toc()
 
@@ -119,7 +121,11 @@ kmeans_2_1_sizes <- function(d.all) {
 }
 
 ratios <- kmeans_2_1_sizes(DPK.all.txt)
-outliers <- ratios[which(ratios$ratio > 10), ] %>% .[["barcode_id"]]
+ratios %>%
+  filter(ratio > 2.5) %T>%
+  {.[["barcode_id"]] ->> outliers} %T>%
+  {.[["ratio"]] %>% plot()} %>%
+  dim()
 
 for(i in seq_along(1:length(outliers))) {
   print(hist_FI_all(DPK.all.txt, outliers[i]))
