@@ -8,20 +8,36 @@
 #
 
 library(magrittr)
+library(purrr)
+library(tidyverse)
 library(stringr)
 library(cmapR)
+library(tictoc)
 
 args <- commandArgs(trailingOnly=TRUE)
 stopifnot(length(args) == 2)
 
-print(args[1])
-print(args[2])
+print(args[1]) # input
+print(args[2]) # TODO: use output
+
+# load all ----------------------------------------------------------------
+
+DATA.files <-
+  list.files(str_c("input/", args[1], "/"),
+             full.names = T)
+
+DATA.all.txt <-
+  map_dfr(DATA.files, read_tsv)
+
+barcode_to_gene_map.txt <-
+  read_tsv("input/barcode_to_gene_map.txt")
+
+# solution ----------------------------------------------------------------
 
 # TODO: medians of k-mean separated clusters
 plate_wide_processing <- function(d.all) {
   # TODO: matrix?
-  res <- tibble(gene_hi = character(), center_hi = double(),
-                gene_lo = character(), center_lo = double())
+  res <- tibble(gene = character(), center = double())
 
   bs <-
     d.all %>%
@@ -61,8 +77,8 @@ plate_wide_processing <- function(d.all) {
         .[["gene_id"]] %>%
         as.character()
 
-      res %<>% add_row(gene_hi = gene.hi, center_hi = hi,
-                       gene_lo = gene.lo, center_lo = lo)
+      res %<>% add_row(gene = gene.hi, center = hi)
+      res %<>% add_row(gene = gene.lo, center = lo)
     }
   }
   res
@@ -72,18 +88,27 @@ run_kmeans <- function(f, li) {
   k <- do.call(what = f, args = li)
 }
 
-tic("DPK")
-dpk <- plate_wide_processing(DPK.all.txt)
-toc()
-tic("LIT")
-lit <- plate_wide_processing(LIT.all.txt)
-toc()
+sol <- plate_wide_processing(DATA.all.txt)
+
+# save DATA ---------------------------------------------------------------
 
 temp_gct <-
-  cmapR::parse.gctx("ground-truth/DPK.CP001_A549_24H_X1_B42_DECONV_UNI.gct")
+  cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct"))
 
-cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
+m <- ncol(temp_gct@mat)
+for(r in rownames(temp_gct@mat)) {
+  val <- sol[sol$gene == r, ]$center
+  temp_gct@mat[r,] <- rep(val, m) + rnorm(m) * 10
+}
+
+print("Saving GCT...")
+temp_gct %>%
   cmapR::write.gct(str_c("output/", args[1], ".gct"), appenddim = F)
+
+# read/write 100% accuracy ------------------------------------------------
+
+#cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
+#  cmapR::write.gct(str_c("output/", args[1], ".gct"), appenddim = F)
 
 # install -----------------------------------------------------------------
 
@@ -91,7 +116,7 @@ cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
 #devtools::install_local("competitor_pack_v2/scorer/cmapR")
 
 # clear warnings
-assign("last.warning", NULL, envir = baseenv())
+#assign("last.warning", NULL, envir = baseenv())
 
 # stop on warnings
-options(warn = 2)
+#options(warn = 2)
