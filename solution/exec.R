@@ -35,9 +35,12 @@ barcode_to_gene_map.txt <-
 # solution ----------------------------------------------------------------
 
 # TODO: medians of k-mean separated clusters
-plate_wide_processing <- function(d.all) {
-  # TODO: matrix?
-  res <- tibble(gene = character(), center = double())
+# TODO: individual medians of k-mean separated clusters
+#
+# TODO: Gmeadian
+plate_wide_processing <- function(d.all, debug = F) {
+
+  res <- list()
 
   bs <-
     d.all %>%
@@ -52,12 +55,17 @@ plate_wide_processing <- function(d.all) {
       .[["FI"]]
 
     li <- list(x = xs, centers = 2, algorithm = "MacQueen")
-    k <- run_kmeans(kmeans, li)
-    #k <- tryCatch({run_kmeans(kmeans, li)},
-    #              warning = function(w) {
-    #                cat(barcode, "does not converges in 10 iterations")
-    #                data.frame(size = c(0, 0), centers = c(0, 0))
-    #              })
+
+    if(!debug) {
+      k <- run_kmeans(kmeans, li)
+    } else {
+      k <- tryCatch({run_kmeans(kmeans, li)},
+                    warning = function(w) {
+                      cat(barcode, "does not converges in 10 iterations\n")
+                      list(size = c(0, 0), centers = c(0, 0))
+                    })
+    }
+
     if(k$size[1] > k$size[2]) {
       hi <- k$centers[1]
       lo <- k$centers[2]
@@ -67,7 +75,7 @@ plate_wide_processing <- function(d.all) {
     }
 
     genes <- barcode_to_gene_map.txt %>% filter(barcode_id == barcode)
-    if(nrow(genes) == 2) { # barcodes 11 and 499
+    if(nrow(genes) == 2) { # exclude barcodes 11 and 499
       gene.hi <-
         genes[genes$high_prop == 1, ] %>%
         .[["gene_id"]] %>%
@@ -77,8 +85,8 @@ plate_wide_processing <- function(d.all) {
         .[["gene_id"]] %>%
         as.character()
 
-      res %<>% add_row(gene = gene.hi, center = hi)
-      res %<>% add_row(gene = gene.lo, center = lo)
+      res[gene.hi] <- hi
+      res[gene.lo] <- lo
     }
   }
   res
@@ -88,7 +96,7 @@ run_kmeans <- function(f, li) {
   k <- do.call(what = f, args = li)
 }
 
-sol <- plate_wide_processing(DATA.all.txt)
+sol <- plate_wide_processing(DATA.all.txt, debug = F)
 
 # save DATA ---------------------------------------------------------------
 
@@ -97,8 +105,8 @@ temp_gct <-
 
 m <- ncol(temp_gct@mat)
 for(r in rownames(temp_gct@mat)) {
-  val <- sol[sol$gene == r, ]$center
-  temp_gct@mat[r,] <- rep(val, m) + rnorm(m) * 10
+  val <- sol[r][[1]]
+  temp_gct@mat[r,] <- rep(val, m) + rnorm(m)
 }
 
 print("Saving GCT...")
