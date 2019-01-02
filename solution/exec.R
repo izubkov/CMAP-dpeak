@@ -9,10 +9,13 @@
 
 library(magrittr)
 library(purrr)
-library(tidyverse)
 library(stringr)
 library(cmapR)
+
+# do not import into final solution
+library(tidyverse)
 library(tictoc)
+library(pryr)
 
 args <- commandArgs(trailingOnly=TRUE)
 stopifnot(length(args) == 2)
@@ -34,6 +37,10 @@ barcode_to_gene_map.txt <-
 
 # solution ----------------------------------------------------------------
 
+run_kmeans <- function(f, li) {
+  k <- do.call(what = f, args = li)
+}
+
 # TODO: medians of k-mean separated clusters
 # TODO: individual medians of k-mean separated clusters
 #
@@ -48,24 +55,32 @@ plate_wide_processing <- function(d.all, debug = F) {
     .[["barcode_id"]]
 
   for(i in seq_along(1:length(bs))) {
-    barcode <- bs[i]
+
+    bid <- bs[i]
+
     xs <-
       d.all %>%
-      filter(barcode_id == barcode) %>%
+      filter(barcode_id == bid) %>%
       .[["FI"]]
 
     li <- list(x = xs, centers = 2, algorithm = "MacQueen")
 
-    if(!debug) {
-      k <- run_kmeans(kmeans, li)
-    } else {
-      k <- tryCatch({run_kmeans(kmeans, li)},
-                    warning = function(w) {
-                      cat(barcode, "does not converges in 10 iterations\n")
-                      list(size = c(0, 0), centers = c(0, 0))
-                    })
-    }
+    k <-
+      tryCatch(
+        { run_kmeans(kmeans, li) },
+        warning = function(w) {
+          # When kmeans does not converges it prints warning and
+          # does not returns anything so k still points to prev. value.
+          # Use plate-wide median.
+          if(debug) {
+            cat("Closure", address(k), "\n")
+            cat(bid, "does not converges in 10 iterations\n")
+          }
+          med <- median(xs)
+          list(size = c(0, 0), centers = c(med, med))
+        })
 
+    # assign clusters
     if(k$size[1] > k$size[2]) {
       hi <- k$centers[1]
       lo <- k$centers[2]
@@ -74,7 +89,7 @@ plate_wide_processing <- function(d.all, debug = F) {
       lo <- k$centers[1]
     }
 
-    genes <- barcode_to_gene_map.txt %>% filter(barcode_id == barcode)
+    genes <- barcode_to_gene_map.txt %>% filter(barcode_id == bid)
     if(nrow(genes) == 2) { # exclude barcodes 11 and 499
       gene.hi <-
         genes[genes$high_prop == 1, ] %>%
@@ -92,11 +107,7 @@ plate_wide_processing <- function(d.all, debug = F) {
   res
 }
 
-run_kmeans <- function(f, li) {
-  k <- do.call(what = f, args = li)
-}
-
-sol <- plate_wide_processing(DATA.all.txt, debug = F)
+sol <- plate_wide_processing(DATA.all.txt, debug = T)
 
 # save DATA ---------------------------------------------------------------
 
