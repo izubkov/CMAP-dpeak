@@ -77,16 +77,18 @@ plate_wide_processing <- function(d.all, debug = F) {
             cat(bid, "does not converges in 10 iterations\n")
           }
           med <- median(xs)
-          list(size = c(0, 0), centers = c(med, med))
+          list(size = -1, centers = med)
         })
 
     # assign clusters
-    if(k$size[1] > k$size[2]) {
-      hi <- k$centers[1]
-      lo <- k$centers[2]
+    if(k$size == -1) {
+      hi <- lo <- k$centers
+    } else if(k$size[1] > k$size[2]) {
+      hi <- median(xs[k$cluster == 1]) #k$centers[1]
+      lo <- median(xs[k$cluster == 2]) #k$centers[2]
     } else {
-      hi <- k$centers[2]
-      lo <- k$centers[1]
+      hi <- median(xs[k$cluster == 2]) #k$centers[2]
+      lo <- median(xs[k$cluster == 1]) #k$centers[1]
     }
 
     genes <- barcode_to_gene_map.txt %>% filter(barcode_id == bid)
