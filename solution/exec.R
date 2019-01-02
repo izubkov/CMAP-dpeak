@@ -83,12 +83,20 @@ plate_wide_processing <- function(d.all, debug = F) {
     # assign clusters
     if(k$size == -1) {
       hi <- lo <- k$centers
-    } else if(k$size[1] > k$size[2]) {
-      hi <- median(xs[k$cluster == 1]) #k$centers[1]
-      lo <- median(xs[k$cluster == 2]) #k$centers[2]
     } else {
-      hi <- median(xs[k$cluster == 2]) #k$centers[2]
-      lo <- median(xs[k$cluster == 1]) #k$centers[1]
+      x.1 <- xs[k$cluster == 1]
+      x.2 <- xs[k$cluster == 1]
+      max.1 <- max(x.1)
+      max.2 <- max(x.2)
+
+      # TODO: higher peak means higher proportion (?)
+      if(max.1 > max.2) {
+        hi <- median(xs[k$cluster == 1])
+        lo <- median(xs[k$cluster == 2])
+      } else {
+        hi <- median(xs[k$cluster == 2])
+        lo <- median(xs[k$cluster == 1])
+      }
     }
 
     genes <- barcode_to_gene_map.txt %>% filter(barcode_id == bid)
