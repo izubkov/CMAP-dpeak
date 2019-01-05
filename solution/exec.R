@@ -21,7 +21,7 @@ args <- commandArgs(trailingOnly=TRUE)
 stopifnot(length(args) == 2)
 
 print(args[1]) # input
-print(args[2]) # TODO: use output
+print(args[2]) # output
 
 # load all ----------------------------------------------------------------
 
@@ -132,12 +132,12 @@ for(r in rownames(temp_gct@mat)) {
 
 print("Saving GCT...")
 temp_gct %>%
-  cmapR::write.gct(str_c("output/", args[1], ".gct"), appenddim = F)
+  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
 
 # read/write 100% accuracy ------------------------------------------------
 
 #cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
-#  cmapR::write.gct(str_c("output/", args[1], ".gct"), appenddim = F)
+#  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
 
 # install -----------------------------------------------------------------
 
