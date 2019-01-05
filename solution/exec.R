@@ -1,9 +1,6 @@
 #!/usr/bin/env Rscript
 
 #
-# TODO: can rely on list of files inside input folder only
-# TODO: output filenames may be different too
-#
 # TODO: foreach for parallel execution
 #
 
@@ -29,13 +26,63 @@ DATA.files <-
   list.files(str_c("input/", args[1], "/"),
              full.names = T)
 
+DATA.plates <-
+  {
+    DATA.files %>%
+    lapply(function(x)
+      strsplit(x, "_") %>%
+      unlist() %>%
+      tail(1) %>%
+      strsplit(".txt") %>%
+      unlist()) %>%
+    unlist()
+  }
+
 DATA.all.txt <-
   map_dfr(DATA.files, read_tsv)
 
 barcode_to_gene_map.txt <-
-  read_tsv("input/barcode_to_gene_map.txt")
+  read_tsv("input/barcode_to_gene_map.txt", col_types = "iii")
 
 # solution ----------------------------------------------------------------
+
+# TODO: just hardcode 11, 499 barcodes?
+barcodes_to_skip <-
+  barcode_to_gene_map.txt %>%
+  group_by(barcode_id) %>%
+  count() %T>%
+  { filter(., n == 2) %>%
+      .[["barcode_id"]] ->> barcodes } %>%
+  filter(n < 2) %>%
+  .[["barcode_id"]]
+
+rows <-
+  barcodes %>%
+  lapply(function(x) {
+    barcode_to_gene_map.txt[barcode_to_gene_map.txt$barcode_id == x, ] %>%
+      .[["gene_id"]] %>%
+      unlist()
+    }) %>%
+  unlist()
+mat <- matrix(nrow = length(rows), ncol = length(DATA.plates))
+colnames(mat) <- DATA.plates
+rownames(mat) <- rows
+
+single_plate_processing <- function(filename) {
+  d <- read_tsv(filename, col_types = "ii")
+  bids.all <-
+    d %>%
+    group_by(barcode_id) %>%
+    nest()
+  for(bid in bids.all$barcode_id) {
+    xs <-
+      bids.all[bids.all$barcode_id == bid, ]$data %>%
+      unlist(use.names = F)
+    print(xs)
+
+    # TODO: ...
+  }
+}
 
 run_kmeans <- function(f, li) {
   k <- do.call(what = f, args = li)
@@ -45,7 +92,7 @@ run_kmeans <- function(f, li) {
 # TODO: individual medians of k-mean separated clusters
 #
 # TODO: Gmeadian
-plate_wide_processing <- function(d.all, debug = F) {
+plates_all_processing <- function(d.all, debug = F) {
 
   res <- list()
 
@@ -89,7 +136,7 @@ plate_wide_processing <- function(d.all, debug = F) {
       max.1 <- max(x.1)
       max.2 <- max(x.2)
 
-      # TODO: higher peak means higher proportion (?)
+      # TODO: higher peak means higher proportion
       if(max.1 > max.2) {
         hi <- median(xs[k$cluster == 1])
         lo <- median(xs[k$cluster == 2])
@@ -117,9 +164,14 @@ plate_wide_processing <- function(d.all, debug = F) {
   res
 }
 
-sol <- plate_wide_processing(DATA.all.txt, debug = T)
+sol <- plates_all_processing(DATA.all.txt, debug = T)
 
 # save DATA ---------------------------------------------------------------
+
+mat <- matrix(stats::rnorm(100), ncol=10)
+rownames(mat) <- letters[1:10]
+colnames(mat) <- LETTERS[1:10]
+(my_ds <- new("GCT", mat=mat))
 
 temp_gct <-
   cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct"))
