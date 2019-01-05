@@ -2,6 +2,8 @@
 
 #
 # TODO: foreach for parallel execution
+# TODO: Gmeadian
+# TODO: higher peak means higher proportion
 #
 
 library(magrittr)
@@ -26,15 +28,18 @@ DATA.files <-
   list.files(str_c("input/", args[1], "/"),
              full.names = T)
 
+extract_plate_name <- function(ss) {
+  strsplit(ss, "_") %>%
+    unlist() %>%
+    tail(1) %>%
+    strsplit(".txt") %>%
+    unlist()
+}
+
 DATA.plates <-
   {
     DATA.files %>%
-    lapply(function(x)
-      strsplit(x, "_") %>%
-      unlist() %>%
-      tail(1) %>%
-      strsplit(".txt") %>%
-      unlist()) %>%
+    lapply(extract_plate_name) %>%
     unlist()
   }
 
@@ -68,31 +73,94 @@ mat <- matrix(nrow = length(rows), ncol = length(DATA.plates))
 colnames(mat) <- DATA.plates
 rownames(mat) <- rows
 
-single_plate_processing <- function(filename) {
-  d <- read_tsv(filename, col_types = "ii")
-  bids.all <-
-    d %>%
-    group_by(barcode_id) %>%
-    nest()
-  for(bid in bids.all$barcode_id) {
-    xs <-
-      bids.all[bids.all$barcode_id == bid, ]$data %>%
-      unlist(use.names = F)
-    print(xs)
+#' Matrix for GCT object. This function has side effects; it uses and changes
+#' variables from global env.
+#'
+#' @param bid
+#' @param FI
+#'
+#' @return
+#' @export
+#'
+#' @examples
+fill_matrix <- function(bid, FI, plate) {
+  # TODO: pracma::kmeanspp
+  k <-
+    tryCatch(
+      {
+        kmeans(x = FI, centers = 2, algorithm = "Lloyd")
+      },
+      warning = function(w) {
+        NULL
+      })
 
-    # TODO: ...
+  if(is.null(k)) {
+    hi <- lo <- median(FI)
+  } else {
+    x.1 <- FI[k$cluster == 1]
+    x.2 <- FI[k$cluster == 1]
+    max.1 <- max(x.1)
+    max.2 <- max(x.2)
+
+    if(max.1 > max.2) {
+      hi <- median(FI[k$cluster == 1])
+      lo <- median(FI[k$cluster == 2])
+    } else {
+      hi <- median(FI[k$cluster == 2])
+      lo <- median(FI[k$cluster == 1])
+    }
   }
+
+  genes <-
+    barcode_to_gene_map.txt %>%
+    filter(barcode_id == bid)
+
+  gene_hi <-
+    genes[genes$high_prop == 1, ] %>%
+    .[["gene_id"]] %>%
+    as.character()
+
+  gene_lo <-
+    genes[genes$high_prop == 0, ] %>%
+    .[["gene_id"]] %>%
+    as.character()
+
+  mat[gene_hi, plate] <<- hi
+  mat[gene_lo, plate] <<- lo
+
+  return(0)
 }
 
-run_kmeans <- function(f, li) {
-  k <- do.call(what = f, args = li)
+single_plate_processing <- function(filename) {
+  plate_name <- extract_plate_name(filename)
+
+  d <- read_tsv(filename, col_types = "ii")
+  d %>%
+    group_by(barcode_id) %>%
+    filter(!barcode_id %in% barcodes_to_skip) %>%
+    summarize(fill_matrix(barcode_id[1], FI, plate_name))
+
+  print(plate_name)
 }
 
-# TODO: medians of k-mean separated clusters
-# TODO: individual medians of k-mean separated clusters
-#
-# TODO: Gmeadian
+for (filename in DATA.files) {
+  single_plate_processing(filename)
+}
+
+# save DATA ---------------------------------------------------------------
+
+gct <- new("GCT", mat=mat)
+print("Saving GCT...")
+gct %>%
+  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
+
+# all plates --------------------------------------------------------------
+
 plates_all_processing <- function(d.all, debug = F) {
+
+  run_kmeans <- function(f, li) {
+    k <- do.call(what = f, args = li)
+  }
 
   res <- list()
 
@@ -136,7 +204,6 @@ plates_all_processing <- function(d.all, debug = F) {
       max.1 <- max(x.1)
       max.2 <- max(x.2)
 
-      # TODO: higher peak means higher proportion
       if(max.1 > max.2) {
         hi <- median(xs[k$cluster == 1])
         lo <- median(xs[k$cluster == 2])
@@ -163,28 +230,21 @@ plates_all_processing <- function(d.all, debug = F) {
   }
   res
 }
+#sol <- plates_all_processing(DATA.all.txt, debug = T)
 
-sol <- plates_all_processing(DATA.all.txt, debug = T)
+#temp_gct <-
+#  cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct"))
+#
+#m <- ncol(temp_gct@mat)
+#for(r in rownames(temp_gct@mat)) {
+#  val <- sol[r][[1]]
+#  temp_gct@mat[r,] <- rep(val, m) + rnorm(m)
+#}
+#
+#print("Saving GCT...")
+#temp_gct %>%
+#  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
 
-# save DATA ---------------------------------------------------------------
-
-mat <- matrix(stats::rnorm(100), ncol=10)
-rownames(mat) <- letters[1:10]
-colnames(mat) <- LETTERS[1:10]
-(my_ds <- new("GCT", mat=mat))
-
-temp_gct <-
-  cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct"))
-
-m <- ncol(temp_gct@mat)
-for(r in rownames(temp_gct@mat)) {
-  val <- sol[r][[1]]
-  temp_gct@mat[r,] <- rep(val, m) + rnorm(m)
-}
-
-print("Saving GCT...")
-temp_gct %>%
-  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
 
 # read/write 100% accuracy ------------------------------------------------
 
