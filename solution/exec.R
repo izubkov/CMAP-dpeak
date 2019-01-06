@@ -6,15 +6,20 @@
 # TODO: higher peak means higher proportion
 #
 
+# installed with cmapR
+library(dplyr)
+
+# installed with solution
 library(magrittr)
-library(purrr)
 library(stringr)
+library(readr)
+library(purrr)
 library(cmapR)
 
 # do not import into final solution
-library(tidyverse)
-library(tictoc)
-library(pryr)
+#library(tidyverse)
+#library(tictoc)
+#library(pryr)
 
 args <- commandArgs(trailingOnly=TRUE)
 stopifnot(length(args) == 2)
@@ -25,7 +30,7 @@ print(args[2]) # output
 # load all ----------------------------------------------------------------
 
 DATA.files <-
-  list.files(str_c("input/", args[1], "/"),
+  list.files(str_c(args[1], "/"),
              full.names = T)
 
 extract_plate_name <- function(ss) {
@@ -47,7 +52,7 @@ DATA.all.txt <-
   map_dfr(DATA.files, read_tsv)
 
 barcode_to_gene_map.txt <-
-  read_tsv("input/barcode_to_gene_map.txt", col_types = "iii")
+  read_tsv("/solution/barcode_to_gene_map.txt", col_types = "iii")
 
 # solution ----------------------------------------------------------------
 
@@ -139,8 +144,6 @@ single_plate_processing <- function(filename) {
     group_by(barcode_id) %>%
     filter(!barcode_id %in% barcodes_to_skip) %>%
     summarize(fill_matrix(barcode_id[1], FI, plate_name))
-
-  print(plate_name)
 }
 
 for (filename in DATA.files) {
@@ -149,10 +152,16 @@ for (filename in DATA.files) {
 
 # save DATA ---------------------------------------------------------------
 
+output_name <-
+  args[1] %>%
+  strsplit("/") %>%
+  unlist() %>%
+  last()
+
 gct <- new("GCT", mat=mat)
 print("Saving GCT...")
 gct %>%
-  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
+  cmapR::write.gct(str_c(args[2], "/", output_name, ".gct"), appenddim = F)
 
 # all plates --------------------------------------------------------------
 
