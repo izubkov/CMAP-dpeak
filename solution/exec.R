@@ -8,14 +8,16 @@
 
 # installed with cmapR
 library(dplyr)
+library(cmapR)
 
 # installed with solution
-library(magrittr)
-library(stringr)
+library(doParallel)
+library(foreach)
 library(getopt)
-library(readr)
+library(magrittr)
 library(purrr)
-library(cmapR)
+library(readr)
+library(stringr)
 
 # do not import into final solution
 #library(tidyverse)
@@ -72,18 +74,6 @@ barcodes_to_skip <-
   filter(n < 2) %>%
   .[["barcode_id"]]
 
-rows <-
-  barcodes %>%
-  lapply(function(x) {
-    barcode_to_gene_map.txt[barcode_to_gene_map.txt$barcode_id == x, ] %>%
-      .[["gene_id"]] %>%
-      unlist()
-    }) %>%
-  unlist()
-mat <- matrix(nrow = length(rows), ncol = length(DATA.plates))
-colnames(mat) <- DATA.plates
-rownames(mat) <- rows
-
 #' Matrix for GCT object. This function has side effects; it uses and changes
 #' variables from global env.
 #'
@@ -94,7 +84,7 @@ rownames(mat) <- rows
 #' @export
 #'
 #' @examples
-fill_matrix <- function(bid, FI, plate) {
+run_alg <- function(bid, FI, plate) {
   # TODO: pracma::kmeanspp
   k <-
     tryCatch(
@@ -136,25 +126,43 @@ fill_matrix <- function(bid, FI, plate) {
     .[["gene_id"]] %>%
     as.character()
 
-  mat[gene_hi, plate] <<- hi
-  mat[gene_lo, plate] <<- lo
+  li <- vector(mode = "list", length = 2)
+  names(li) <- c(gene_hi, gene_lo)
+  li[[gene_hi]] <- hi
+  li[[gene_lo]] <- lo
 
-  return(0)
+  return(li)
 }
 
 single_plate_processing <- function(filename) {
   plate_name <- extract_plate_name(filename)
 
   d <- read_tsv(filename, col_types = "ii")
-  d %>%
+  xs <-
+    d %>%
     group_by(barcode_id) %>%
     filter(!barcode_id %in% barcodes_to_skip) %>%
-    summarize(fill_matrix(barcode_id[1], FI, plate_name))
+    arrange(barcode_id) %>%
+    split(.$barcode_id)
+
+  col <-
+    (foreach(x = xs) %do%
+      run_alg(x$barcode_id[1], x$FI, plate_name)) %>%
+    unlist()
+  #names(col) <- plate_name
+
+  return(col)
 }
 
-for (filename in DATA.files) {
-  single_plate_processing(filename)
-}
+registerDoParallel(cores = detectCores(all.tests = T))
+cols <-
+  foreach(filename = DATA.files) %dopar%
+    single_plate_processing(filename)
+mat <- matrix(cols %>% unlist(),
+              nrow = length(cols[[1]]),
+              ncol = length(DATA.plates))
+rownames(mat) <- names(cols[[1]])
+colnames(mat) <- DATA.plates
 
 # save DATA ---------------------------------------------------------------
 
