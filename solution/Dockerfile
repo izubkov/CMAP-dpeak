@@ -17,6 +17,7 @@ RUN Rscript -e "install.packages(\"/score/cmapR_1.0.1.tar.gz\", type=\"source\",
 
 RUN Rscript -e "install.packages(\"magrittr\")"
 RUN Rscript -e "install.packages(\"stringr\")"
+RUN Rscript -e "install.packages(\"getopt\")"
 RUN Rscript -e "install.packages(\"readr\")"
 RUN Rscript -e "install.packages(\"purrr\")"
 

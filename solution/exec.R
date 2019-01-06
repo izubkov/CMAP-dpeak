@@ -12,6 +12,7 @@ library(dplyr)
 # installed with solution
 library(magrittr)
 library(stringr)
+library(getopt)
 library(readr)
 library(purrr)
 library(cmapR)
@@ -21,16 +22,21 @@ library(cmapR)
 #library(tictoc)
 #library(pryr)
 
-args <- commandArgs(trailingOnly=TRUE)
-stopifnot(length(args) == 2)
+args_spec <- matrix(c(
+  "dspath",        "x", 1, "character",
+  "out",           "y", 1, "character",
+  "create_subdir", "z", 2, "integer",
+  "plate",         "f", 2, "character"
+), byrow = T, ncol = 4)
+opt <- getopt::getopt(args_spec)
 
-print(args[1]) # input
-print(args[2]) # output
+print(opt$dspath)
+print(opt$out)
 
 # load all ----------------------------------------------------------------
 
 DATA.files <-
-  list.files(str_c(args[1], "/"),
+  list.files(str_c(opt$dspath, "/"),
              full.names = T)
 
 extract_plate_name <- function(ss) {
@@ -153,7 +159,7 @@ for (filename in DATA.files) {
 # save DATA ---------------------------------------------------------------
 
 output_name <-
-  args[1] %>%
+  opt$dspath %>%
   strsplit("/") %>%
   unlist() %>%
   last()
@@ -161,7 +167,7 @@ output_name <-
 gct <- new("GCT", mat=mat)
 print("Saving GCT...")
 gct %>%
-  cmapR::write.gct(str_c(args[2], "/", output_name, ".gct"), appenddim = F)
+  cmapR::write.gct(str_c(opt$out, "/", output_name, ".gct"), appenddim = F)
 
 # all plates --------------------------------------------------------------
 
