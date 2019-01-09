@@ -3,14 +3,6 @@
 sudo rm -rf output/*
 
 ################################################################################
-
-# Builds submission container.
-docker build -t cmap/submission ./submission
-
-echo "Build successfull"
-echo "*****"
-
-################################################################################
 # Execution of tests. Each of local testing, provisional testing, and final
 # testing, consist of two test cases.
 
@@ -18,14 +10,11 @@ TEST_CASE_1="DPK.CP001_A549_24H_X1_B42"
 TEST_CASE_2="LITMUS.KD017_A549_96H_X1_B42"
 
 exec_test() {
-  docker run --rm -it \
-    -v $(pwd)/input:/input \
-    -v $(pwd)/output:/output \
-    cmap/submission \
-      --dspath /input/$1 \
-      --out /output \
-      --create_subdir 0 \
-      --plate $1
+  ./exec_local.sh \
+    --dspath /input/$1 \
+    --out /output \
+    --create_subdir 0 \
+    --plate $1
 }
 
 START_TIME=`date +%s`
