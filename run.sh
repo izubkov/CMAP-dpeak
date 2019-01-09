@@ -18,8 +18,7 @@ TEST_CASE_1="DPK.CP001_A549_24H_X1_B42"
 TEST_CASE_2="LITMUS.KD017_A549_96H_X1_B42"
 
 exec_test() {
-  #docker run --rm -it \
-  docker run --rm \
+  docker run --rm -it \
     -v $(pwd)/input:/input \
     -v $(pwd)/output:/output \
     cmap/submission \

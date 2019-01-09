@@ -56,8 +56,8 @@ DATA.plates <-
     unlist()
   }
 
-DATA.all.txt <-
-  map_dfr(DATA.files, read_tsv)
+# DATA.all.txt <-
+#   map_dfr(DATA.files, read_tsv)
 
 barcode_to_gene_map.txt <-
   read_tsv("/submission/barcode_to_gene_map.txt", col_types = "iii")
@@ -74,22 +74,44 @@ barcodes_to_skip <-
   filter(n < 2) %>%
   .[["barcode_id"]]
 
-#' Matrix for GCT object. This function has side effects; it uses and changes
-#' variables from global env.
-#'
-#' @param bid
-#' @param FI
-#'
-#' @return
-#' @export
-#'
-#' @examples
-run_alg <- function(bid, FI, plate) {
-  # TODO: pracma::kmeanspp
+run_alg <- function(bid, FI) {
+# fc <- new("flexclustControl", iter.max = 10, verbose = 1,
+#           initcent = "kmeanspp")
+# cc <- cclust(FI, 2, dist = "euclidean", method = "kmeans",
+#              control = fc)
+
+distEuclidean <- function(x, centers)
+{
+  if(ncol(x)!=ncol(centers))
+    stop(sQuote("x")," and ",sQuote("centers"),
+         " must have the same number of columns")
+  z <- matrix(0, nrow=nrow(x), ncol=nrow(centers))
+  for(k in 1:nrow(centers)){
+    z[,k] <- sqrt( colSums((t(x) - centers[k,])^2) )
+  }
+  z
+}
+
+# TODO: sample from peaks/maximum values?
+# TODO: different distance (manhattan)
+kmeanspp <- function(x, k, family = NULL)
+{
+  centers <- matrix(0, nrow=k, ncol=ncol(x))
+  centers[1,] <- x[sample(1:nrow(x), 1), , drop=FALSE]
+  d <- distEuclidean(x, centers[1L,,drop=FALSE])^2
+  for(l in 2:k){
+    centers[l,] <- x[sample(1:nrow(x), 1, prob=d), , drop=FALSE]
+    d <- pmin(d, distEuclidean(x, centers[l,,drop=FALSE])^2)
+  }
+  centers
+}
+
   k <-
     tryCatch(
       {
-        kmeans(x = FI, centers = 2, algorithm = "Lloyd")
+        set.seed(42)
+        cs <- kmeanspp(as.matrix(FI), 2)
+        kmeans(x = FI, centers = cs, algorithm = "Lloyd")
       },
       warning = function(w) {
         NULL
@@ -147,7 +169,7 @@ single_plate_processing <- function(filename) {
 
   col <-
     (foreach(x = xs) %do%
-      run_alg(x$barcode_id[1], x$FI, plate_name)) %>%
+      run_alg(x$barcode_id[1], x$FI)) %>%
     unlist()
   #names(col) <- plate_name
 

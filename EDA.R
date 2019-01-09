@@ -41,7 +41,8 @@ LIT.out.gct <- read_tsv("competitor_pack_v2/output/LITMUS.KD017_A549_96H_X1_B42.
 
 # hist. of individual and all ---------------------------------------------
 
-hist_FI <- function(filenames, gct, out, txt) {
+hist_FI <- function(filenames = DPK.files, gct = DPK.gct, out = DPK.out.gct,
+                    txt = "A03") {
   cat("Barcodes of", txt, "\n")
 
   fid <- which(grepl(txt, filenames))
@@ -87,7 +88,7 @@ hist_FI <- function(filenames, gct, out, txt) {
   cat("Matlab out hi/lo:", out_hi, out_lo)
 }
 
-hist_FI_all <- function(d.all, bid) {
+hist_FI_all <- function(d.all = DPK.all.txt, bid = 41) {
   d.all %>%
     filter(barcode_id == bid) %>%
     plot_ly(x = ~FI, type = "histogram")
@@ -100,7 +101,7 @@ library(Gmedian)
 kmeans_2_1_sizes <- function(d.all) {
 
   calc_kmeans <- function(x) {
-    sizes <- kmeans(x, 2, algorithm = "MacQueen") %>% .[["size"]]
+    sizes <- kmeans(x, 2, algorithm = "Lloyd") %>% .[["size"]]
     if(sizes[1] > sizes[2]) {
       sizes[1] / sizes[2]
     } else {
@@ -122,7 +123,7 @@ kmeans_2_1_sizes <- function(d.all) {
 
 ratios <- kmeans_2_1_sizes(DPK.all.txt)
 ratios %>%
-  filter(ratio > 2.5) %T>%
+  filter(ratio < 1.9 | ratio > 2.5) %T>%
   {.[["barcode_id"]] ->> outliers} %T>%
   {.[["ratio"]] %>% plot()} %>%
   dim()
