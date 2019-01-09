@@ -47,6 +47,3 @@ docker run --rm \
   -v $(pwd)/output:/workdir \
   -v $(pwd)/ground-truth:/ground-truth \
   cmap/scorer $TEST_CASE_1 $TEST_CASE_2 $TEST_TIME_1 $TEST_TIME_2
-
-source ~/.bashrc
-alert "DONE"
