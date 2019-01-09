@@ -60,7 +60,7 @@ DATA.plates <-
 #   map_dfr(DATA.files, read_tsv)
 
 barcode_to_gene_map.txt <-
-  read_tsv("/submission/barcode_to_gene_map.txt", col_types = "iii")
+  read_tsv("barcode_to_gene_map.txt", col_types = "iii")
 
 # submission --------------------------------------------------------------
 
@@ -171,7 +171,6 @@ single_plate_processing <- function(filename) {
     (foreach(x = xs) %do%
       run_alg(x$barcode_id[1], x$FI)) %>%
     unlist()
-  #names(col) <- plate_name
 
   return(col)
 }
