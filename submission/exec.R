@@ -10,7 +10,7 @@
 library(dplyr)
 library(cmapR)
 
-# installed with solution
+# installed with submission
 library(doParallel)
 library(foreach)
 library(getopt)
@@ -19,7 +19,7 @@ library(purrr)
 library(readr)
 library(stringr)
 
-# do not import into final solution
+# do not import into final submission
 #library(tidyverse)
 #library(tictoc)
 #library(pryr)
@@ -60,9 +60,9 @@ DATA.all.txt <-
   map_dfr(DATA.files, read_tsv)
 
 barcode_to_gene_map.txt <-
-  read_tsv("/solution/barcode_to_gene_map.txt", col_types = "iii")
+  read_tsv("/submission/barcode_to_gene_map.txt", col_types = "iii")
 
-# solution ----------------------------------------------------------------
+# submission --------------------------------------------------------------
 
 # TODO: just hardcode 11, 499 barcodes?
 barcodes_to_skip <-

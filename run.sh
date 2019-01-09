@@ -4,8 +4,8 @@ sudo rm -rf output/*
 
 ################################################################################
 
-# Builds solution container.
-docker build -t cmap/solution ./solution
+# Builds submission container.
+docker build -t cmap/submission ./submission
 
 echo "Build successfull"
 echo "*****"
@@ -22,7 +22,7 @@ exec_test() {
   docker run --rm \
     -v $(pwd)/input:/input \
     -v $(pwd)/output:/output \
-    cmap/solution \
+    cmap/submission \
       --dspath /input/$1 \
       --out /output \
       --create_subdir 0 \

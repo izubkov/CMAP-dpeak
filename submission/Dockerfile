@@ -10,10 +10,12 @@ RUN Rscript -e "install.packages(c(\"BiocManager\", \"data.table\"))"
 RUN Rscript -e "BiocManager::install(\"dplyr\")"
 RUN Rscript -e "BiocManager::install(\"pROC\")"
 RUN Rscript -e "BiocManager::install(\"rhdf5\")"
-COPY ./cmapR_1.0.1.tar.gz /score/cmapR_1.0.1.tar.gz
-RUN Rscript -e "install.packages(\"/score/cmapR_1.0.1.tar.gz\", type=\"source\", repos=NULL)"
 
-# install additional solution packages
+RUN mkdir -p /submission
+WORKDIR /submission
+COPY . /submission
+
+RUN Rscript -e "install.packages(\"/submission/cmapR_1.0.1.tar.gz\", type=\"source\", repos=NULL)"
 
 RUN Rscript -e "install.packages(\"doParallel\")"
 RUN Rscript -e "install.packages(\"foreach\")"
@@ -23,6 +25,7 @@ RUN Rscript -e "install.packages(\"purrr\")"
 RUN Rscript -e "install.packages(\"readr\")"
 RUN Rscript -e "install.packages(\"stringr\")"
 
-COPY . /solution
+RUN chmod +x /submission/exec_R.sh
 
-ENTRYPOINT [ "/solution/exec_R.sh" ]
+ENTRYPOINT [ "/submission/exec_R.sh" ]
+CMD []
