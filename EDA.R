@@ -25,19 +25,41 @@ all(DPK.all.txt %>%
       distinct())
 
 barcode_to_gene_map.txt <-
-  read_tsv("competitor_pack_v2/input/barcode_to_gene_map.txt")
+  read_tsv("submission/barcode_to_gene_map.txt", col_types = "iii")
 
 # ground truth ------------------------------------------------------------
 
-DPK.gct <- read_tsv("competitor_pack_v2/ground-truth/DPK.CP001_A549_24H_X1_B42_DECONV_UNI.gct", skip = 2)
-DPK.DE.gct <- read_tsv("competitor_pack_v2/ground-truth/DPK.CP001_A549_24H_X1_B42_DE_UNI.gct", skip = 2)
-LIT.gct <- read_tsv("competitor_pack_v2/ground-truth/LITMUS.KD017_A549_96H_X1_B42_DECONV_UNI.gct", skip = 2)
-LIT.DE.gct <- read_tsv("competitor_pack_v2/ground-truth/LITMUS.KD017_A549_96H_X1_B42_DE_UNI.gct", skip = 2)
+DPK.DE.uni     <- parse.gctx("ground-truth/DPK.CP001_A549_24H_X1_B42_DE_UNI.gct")
+DPK.DECONV.uni <- parse.gctx("ground-truth/DPK.CP001_A549_24H_X1_B42_DECONV_UNI.gct")
+
+LIT.DE.uni     <- parse.gctx("ground-truth/LITMUS.KD017_A549_96H_X1_B42_DE_UNI.gct")
+LIT.DECONV.uni <- parse.gctx("ground-truth/LITMUS.KD017_A549_96H_X1_B42_DECONV_UNI.gct")
+
+# matlab ------------------------------------------------------------------
+
+DPK.DE.matlab     <- parse.gctx("competitor_pack_v2/output/DPK.CP001_A549_24H_X1_B42/level4_ZSPC_n376x976.gct")
+DPK.DECONV.matlab <- parse.gctx("competitor_pack_v2/output/DPK.CP001_A549_24H_X1_B42.gct")
+
+LIT.DE.matlab     <- parse.gctx("competitor_pack_v2/output/LITMUS.KD017_A549_96H_X1_B42/level4_ZSPC_n374x976.gct")
+LIT.DECONV.matlab <- parse.gctx("competitor_pack_v2/output/LITMUS.KD017_A549_96H_X1_B42.gct")
 
 # output ------------------------------------------------------------------
 
-DPK.out.gct <- read_tsv("competitor_pack_v2/output/DPK.CP001_A549_24H_X1_B42.gct", skip = 2)
-LIT.out.gct <- read_tsv("competitor_pack_v2/output/LITMUS.KD017_A549_96H_X1_B42.gct", skip = 2)
+DPK.DE.out     <- parse.gctx("output/DPK.CP001_A549_24H_X1_B42/level4_ZSPC_n376x976.gct")
+DPK.DECONV.out <- parse.gctx("output/DPK.CP001_A549_24H_X1_B42.gct")
+
+LIT.DE.out     <- parse.gctx("output/LITMUS.KD017_A549_96H_X1_B42/level4_ZSPC_n374x976.gct")
+LIT.DECONV.out <- parse.gctx("output/LITMUS.KD017_A549_96H_X1_B42.gct")
+
+# COR, AUC reports --------------------------------------------------------
+
+source("scoring.R")
+
+report(DPK.DECONV.uni, DPK.DECONV.out, DPK.DE.uni, DPK.DE.out)
+
+# COR, AUC visualization --------------------------------------------------
+
+# TODO
 
 # hist. of individual and all ---------------------------------------------
 
