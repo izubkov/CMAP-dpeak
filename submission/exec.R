@@ -60,7 +60,7 @@ DATA.plates <-
 #   map_dfr(DATA.files, read_tsv)
 
 barcode_to_gene_map.txt <-
-  read_tsv("/submission/barcode_to_gene_map.txt", col_types = "iii")
+  read_tsv("barcode_to_gene_map.txt", col_types = "iii")
 
 # submission --------------------------------------------------------------
 
