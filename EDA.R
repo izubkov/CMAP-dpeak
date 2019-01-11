@@ -59,7 +59,12 @@ report(DPK.DECONV.uni, DPK.DECONV.out, DPK.DE.uni, DPK.DE.out)
 
 # COR, AUC visualization --------------------------------------------------
 
-# TODO
+cors <- compute_spearman_accuracy(DPK.DECONV.uni, DPK.DECONV.out)
+cors <- compute_spearman_accuracy(DPK.DECONV.uni, DPK.DECONV.matlab)
+
+# 976 = 16 * 61
+plot_ly(x = rep(1:61, 16), y = rep(61:1, times = 1, each = 61),
+        z = cors, type = "heatmap", text = ~names(cors))
 
 # hist. of individual and all ---------------------------------------------
 
