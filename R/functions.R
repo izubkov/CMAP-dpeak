@@ -10,6 +10,19 @@ genes_by_bid <- function(bids, d = barcode_to_gene_map.txt) {
     arrange(desc(high_prop))
 }
 
+intensities <- function(filenames = DPK.files, bid = 12, txt = "A11") {
+  fid <- which(grepl(txt, filenames))
+  stopifnot(length(fid) == 1)
+
+  d <-
+    read_tsv(filenames[fid],
+             col_types = "ii",
+             col_names = c("barcode_id", "FI"), skip = 1) %>%
+    filter(barcode_id == bid)
+
+  d$FI
+}
+
 # hist. of individual and all ---------------------------------------------
 
 hist_FI <- function(filenames = DPK.files,
@@ -23,7 +36,7 @@ hist_FI <- function(filenames = DPK.files,
 
   d <-
     read_tsv(filenames[fid],
-             col_types = "dd",
+             col_types = "ii",
              col_names = c("barcode_id", "FI"), skip = 1)
 
   li <-
