@@ -1,11 +1,18 @@
-# Run locally:
+## Publish new docker:
 
 ``` bash
-cd workspace
-./exec.sh
+cd submission
+docker build -t $DOCKER_ACC/$DOCKER_REPO:$IMG_TAG .
+sudo docker push $DOCKER_ACC/$DOCKER_REPO:$IMG_TAG
 ```
 
-# submit container:
+## Run locally:
+
+``` bash
+./run.sh
+```
+
+## Make submission:
 
 ``` bash
 ./run.sh
