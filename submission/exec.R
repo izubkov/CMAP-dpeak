@@ -94,7 +94,8 @@ run_alg <- function(bid, FI) {
 
   # TODO: sample from peaks/maximum values?
   # TODO: different distance (manhattan)?
-  kmeanspp <- function(x, k, family = NULL)
+  # TODO: try oversampling
+  kmeanspp <- function(x, k = 2, family = NULL)
   {
     centers <- matrix(0, nrow=k, ncol=ncol(x))
     centers[1,] <- x[sample(1:nrow(x), 1), , drop=FALSE]
@@ -117,14 +118,35 @@ run_alg <- function(bid, FI) {
         NULL
       })
 
-  # detect peaks
-  FI.log2 <- log(FI, 2)
-  # "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine"
-  ds <- density(FI.log2, bw = "SJ", adjust = 1,
-                kernel = "gaussian",
-                weights = NULL, window = kernel)
-  plot(ds)
+  plot_densities <- function(FI,
+                             fun = function(x) x,
+                             kmeans.result = k) {
+    FI.t <- fun(FI)
+    FI.1 <- FI.t[kmeans.result$cluster == 1]
+    FI.2 <- FI.t[kmeans.result$cluster == 2]
+    ds.0 <- density(FI.t, bw = "SJ", kernel = "gaussian", adjust = 1,
+                    weights = NULL, window = kernel)
+    ds.1 <- density(FI.1, bw = "SJ", kernel = "gaussian", adjust = 1,
+                    weights = NULL, window = kernel)
+    ds.2 <- density(FI.2, bw = "SJ", kernel = "gaussian", adjust = 1,
+                    weights = NULL, window = kernel)
+    max_y <- max(c(ds.0$y, ds.1$y, ds.2$y))
+    plot(ds.0, type = "n", ylim = c(0, max_y*1.1))
+    lines(ds.0, col = "black")
+    lines(ds.1, col = "green")
+    lines(ds.2, col = "red")
+  }
 
+  plot_densities(FI)
+  plot_densities(FI, log)
+
+  # # detect peaks
+  # FI.log2 <- log(FI, 2)
+  # # "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine"
+  # ds <- density(FI.log2, bw = "SJ", adjust = 1,
+  #               kernel = "gaussian",
+  #               weights = NULL, window = kernel)
+  # plot(ds)
 
   if(is.null(k)) {
     hi <- lo <- median(FI)
