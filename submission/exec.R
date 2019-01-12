@@ -75,36 +75,36 @@ barcodes_to_skip <-
   .[["barcode_id"]]
 
 run_alg <- function(bid, FI) {
-# fc <- new("flexclustControl", iter.max = 10, verbose = 1,
-#           initcent = "kmeanspp")
-# cc <- cclust(FI, 2, dist = "euclidean", method = "kmeans",
-#              control = fc)
+  # fc <- new("flexclustControl", iter.max = 10, verbose = 1,
+  #           initcent = "kmeanspp")
+  # cc <- cclust(FI, 2, dist = "euclidean", method = "kmeans",
+  #              control = fc)
 
-distEuclidean <- function(x, centers)
-{
-  if(ncol(x)!=ncol(centers))
-    stop(sQuote("x")," and ",sQuote("centers"),
-         " must have the same number of columns")
-  z <- matrix(0, nrow=nrow(x), ncol=nrow(centers))
-  for(k in 1:nrow(centers)){
-    z[,k] <- sqrt( colSums((t(x) - centers[k,])^2) )
+  distEuclidean <- function(x, centers)
+  {
+    if(ncol(x)!=ncol(centers))
+      stop(sQuote("x")," and ",sQuote("centers"),
+           " must have the same number of columns")
+    z <- matrix(0, nrow=nrow(x), ncol=nrow(centers))
+    for(k in 1:nrow(centers)){
+      z[,k] <- sqrt( colSums((t(x) - centers[k,])^2) )
+    }
+    z
   }
-  z
-}
 
-# TODO: sample from peaks/maximum values?
-# TODO: different distance (manhattan)
-kmeanspp <- function(x, k, family = NULL)
-{
-  centers <- matrix(0, nrow=k, ncol=ncol(x))
-  centers[1,] <- x[sample(1:nrow(x), 1), , drop=FALSE]
-  d <- distEuclidean(x, centers[1L,,drop=FALSE])^2
-  for(l in 2:k){
-    centers[l,] <- x[sample(1:nrow(x), 1, prob=d), , drop=FALSE]
-    d <- pmin(d, distEuclidean(x, centers[l,,drop=FALSE])^2)
+  # TODO: sample from peaks/maximum values?
+  # TODO: different distance (manhattan)?
+  kmeanspp <- function(x, k, family = NULL)
+  {
+    centers <- matrix(0, nrow=k, ncol=ncol(x))
+    centers[1,] <- x[sample(1:nrow(x), 1), , drop=FALSE]
+    d <- distEuclidean(x, centers[1L,,drop=FALSE])^2
+    for(l in 2:k){
+      centers[l,] <- x[sample(1:nrow(x), 1, prob=d), , drop=FALSE]
+      d <- pmin(d, distEuclidean(x, centers[l,,drop=FALSE])^2)
+    }
+    centers
   }
-  centers
-}
 
   k <-
     tryCatch(
@@ -116,6 +116,15 @@ kmeanspp <- function(x, k, family = NULL)
       warning = function(w) {
         NULL
       })
+
+  # detect peaks
+  FI.log2 <- log(FI, 2)
+  # "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine"
+  ds <- density(FI.log2, bw = "SJ", adjust = 1,
+                kernel = "gaussian",
+                weights = NULL, window = kernel)
+  plot(ds)
+
 
   if(is.null(k)) {
     hi <- lo <- median(FI)
