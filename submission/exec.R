@@ -74,7 +74,7 @@ barcodes_to_skip <-
   filter(n < 2) %>%
   .[["barcode_id"]]
 
-run_alg <- function(bid, FI) {
+run_alg <- function(bid, FI, debug_plate = NULL) {
   # fc <- new("flexclustControl", iter.max = 10, verbose = 1,
   #           initcent = "kmeanspp")
   # cc <- cclust(FI, 2, dist = "euclidean", method = "kmeans",
@@ -136,9 +136,66 @@ run_alg <- function(bid, FI) {
     lines(ds.1, col = "green")
     lines(ds.2, col = "red")
   }
+  # plot_densities(FI)
+  # plot_densities(FI, log)
 
-  plot_densities(FI)
-  plot_densities(FI, log)
+  if(is.null(k)) {
+    hi <- lo <- median(FI)
+  } else {
+    FI.1 <- FI[k$cluster == 1]
+    FI.2 <- FI[k$cluster == 2]
+
+    if(length(FI.1) < 2 || length(FI.2) < 2) {
+      hi <- lo <- median(FI)
+      #cat("Bad clusters:", bid, debug_plate, "(", length(FI.1), length(FI.2), ")", "\n")
+    } else {
+      # TODO: read sources, figure out
+      ds.1 <- ds.2 <- data.frame(y = 0)
+      ds.1 <- try(density(FI.1, bw = "SJ", kernel = "gaussian", adjust = 1, weights = NULL, window = kernel))
+      ds.2 <- try(density(FI.2, bw = "SJ", kernel = "gaussian", adjust = 1, weights = NULL, window = kernel))
+      beads.1 <- length(FI.1)
+      beads.2 <- length(FI.2)
+
+      if(!is.atomic(ds.1) && !is.atomic(ds.2)) {
+        peak.1 <- max(ds.1$y)
+        peak.2 <- max(ds.2$y)
+
+        if(peak.1 > peak.2 && beads.1 > beads.2) {
+          # sure the first cluster is high_prop
+          hi <- median(FI[k$cluster == 1])
+          lo <- median(FI[k$cluster == 2])
+        } else if(peak.1 < peak.2 && beads.1 < beads.2) {
+          # sure the second cluster is high_prop
+          hi <- median(FI[k$cluster == 2])
+          lo <- median(FI[k$cluster == 1])
+        } else {
+          # unsure case
+          if(!is.null(debug_plate)) {
+            #cat("UNSURE:", bid, debug_plate, "\n")
+          }
+          if(beads.1 > beads.2) {
+            hi <- median(FI[k$cluster == 1])
+            lo <- median(FI[k$cluster == 2])
+          } else {
+            hi <- median(FI[k$cluster == 2])
+            lo <- median(FI[k$cluster == 1])
+          }
+        }
+      } else {
+        # unsure case
+        if(!is.null(debug_plate)) {
+          #cat("UNSURE:", bid, debug_plate, "\n")
+        }
+        if(beads.1 > beads.2) {
+          hi <- median(FI[k$cluster == 1])
+          lo <- median(FI[k$cluster == 2])
+        } else {
+          hi <- median(FI[k$cluster == 2])
+          lo <- median(FI[k$cluster == 1])
+        }
+      }
+    }
+  }
 
   # # detect peaks
   # FI.log2 <- log(FI, 2)
@@ -147,23 +204,6 @@ run_alg <- function(bid, FI) {
   #               kernel = "gaussian",
   #               weights = NULL, window = kernel)
   # plot(ds)
-
-  if(is.null(k)) {
-    hi <- lo <- median(FI)
-  } else {
-    x.1 <- FI[k$cluster == 1]
-    x.2 <- FI[k$cluster == 1]
-    max.1 <- max(x.1)
-    max.2 <- max(x.2)
-
-    if(max.1 > max.2) {
-      hi <- median(FI[k$cluster == 1])
-      lo <- median(FI[k$cluster == 2])
-    } else {
-      hi <- median(FI[k$cluster == 2])
-      lo <- median(FI[k$cluster == 1])
-    }
-  }
 
   genes <-
     barcode_to_gene_map.txt %>%
@@ -200,7 +240,7 @@ single_plate_processing <- function(filename) {
 
   col <-
     (foreach(x = xs) %do%
-      run_alg(x$barcode_id[1], x$FI)) %>%
+      run_alg(x$barcode_id[1], x$FI, plate_name)) %>%
     unlist()
 
   return(col)
@@ -208,6 +248,8 @@ single_plate_processing <- function(filename) {
 
 registerDoParallel(cores = detectCores(all.tests = T))
 cols <-
+  # foreach(filename = DATA.files) %do%
+  #   single_plate_processing(filename)
   foreach(filename = DATA.files) %dopar%
     single_plate_processing(filename)
 mat <- matrix(cols %>% unlist(),
