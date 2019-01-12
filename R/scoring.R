@@ -1,5 +1,6 @@
 #' Compute the spearman rank correlation between
-#' the columns of UNI and the columns of DUO DECONV DATA.
+#' the gene of UNI and the gene of DUO DECONV DATA.
+#' Each gene is a vector of plate values "A03", "A04" ...
 #'
 #' @param UNI
 #' @param DUO
