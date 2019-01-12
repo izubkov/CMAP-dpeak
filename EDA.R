@@ -53,18 +53,18 @@ LIT.DECONV.out <- parse.gctx("output/LITMUS.KD017_A549_96H_X1_B42.gct")
 
 # COR, AUC reports --------------------------------------------------------
 
-source("scoring.R")
+source("R/scoring.R")
 
 report(DPK.DECONV.uni, DPK.DECONV.out, DPK.DE.uni, DPK.DE.out)
 
 # COR, AUC visualization --------------------------------------------------
 
-cors <- compute_spearman_accuracy(DPK.DECONV.uni, DPK.DECONV.out)
-cors <- compute_spearman_accuracy(DPK.DECONV.uni, DPK.DECONV.matlab)
+COR <- compute_spearman_accuracy(DPK.DECONV.uni, DPK.DECONV.out)
+COR <- compute_spearman_accuracy(DPK.DECONV.uni, DPK.DECONV.matlab)
 
 # 976 = 16 * 61
 plot_ly(x = rep(1:61, 16), y = rep(61:1, times = 1, each = 61),
-        z = cors, type = "heatmap", text = ~names(cors))
+        z = COR, type = "heatmap", text = ~names(COR))
 
 # hist. of individual and all ---------------------------------------------
 
