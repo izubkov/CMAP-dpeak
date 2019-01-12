@@ -1,5 +1,7 @@
 # barcode ids -------------------------------------------------------------
 
+require(tidyverse)
+
 bids_by_gene <- function(genes, d = barcode_to_gene_map.txt) {
   d[d$gene_id %in% as.integer(genes), ] %>%
     arrange(desc(high_prop))
