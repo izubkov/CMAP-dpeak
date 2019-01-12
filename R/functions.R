@@ -1,11 +1,13 @@
 # barcode ids -------------------------------------------------------------
 
 bids_by_gene <- function(genes, d = barcode_to_gene_map.txt) {
-  d[d$gene_id %in% as.integer(genes), ]
+  d[d$gene_id %in% as.integer(genes), ] %>%
+    arrange(desc(high_prop))
 }
 
 genes_by_bid <- function(bids, d = barcode_to_gene_map.txt) {
-  d[d$barcode_id %in% as.integer(bids), ]
+  d[d$barcode_id %in% as.integer(bids), ] %>%
+    arrange(desc(high_prop))
 }
 
 # hist. of individual and all ---------------------------------------------
@@ -33,6 +35,7 @@ hist_FI <- function(filenames = DPK.files,
 
   bid <- readline("Barcode: ")
 
+  # histogram
   d %>%
     filter(barcode_id == bid) %>%
     select(FI) %>%
@@ -40,17 +43,15 @@ hist_FI <- function(filenames = DPK.files,
     hist(breaks = length(.),
          main = str_c(bid, ", ", txt, ".txt"))
 
-  genes <- barcode_to_gene_map.txt %>%
-    filter(barcode_id == bid) %>% arrange(desc(high_prop))
+  genes <- genes_by_bid(bid)
+  gene_hi <- genes$gene_id[1] %>% as.character()
+  gene_lo <- genes$gene_id[2] %>% as.character()
   print(genes)
 
-  gene_hi <- genes$gene_id[1]
-  gene_lo <- genes$gene_id[2]
-
-  ground_hi <- ground.gct[ground.gct$id == gene_hi, ][txt][[1]]
-  ground_lo <- ground.gct[ground.gct$id == gene_lo, ][txt][[1]]
-  out_hi <- out[out$id == gene_hi, ][txt][[1]]
-  out_lo <- out[out$id == gene_lo, ][txt][[1]]
+  ground_hi <- ground.gct@mat[gene_hi, txt]
+  ground_lo <- ground.gct@mat[gene_lo, txt]
+  out_hi <- out@mat[gene_hi, txt]
+  out_lo <- out@mat[gene_lo, txt]
   abline(v = ground_hi, col = "red")
   abline(v = ground_lo, col = "blue")
   abline(v = out_hi, col = "darkred", lty = "dotted")
@@ -59,7 +60,7 @@ hist_FI <- function(filenames = DPK.files,
   cat("Matlab out hi/lo:", out_hi, out_lo)
 }
 
-hist_FI_all <- function(d.all = DPK.all.txt, bid = 41) {
+hist_FI_all <- function(d.all = DPK.all.txt, bid = 12) {
   d.all %>%
     filter(barcode_id == bid) %>%
     plot_ly(x = ~FI, type = "histogram")
