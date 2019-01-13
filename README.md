@@ -1,9 +1,10 @@
 ## Publish new docker:
 
 ``` bash
-cd submission
-docker build -t $DOCKER_ACC/$DOCKER_REPO:$IMG_TAG .
-sudo docker push $DOCKER_ACC/$DOCKER_REPO:$IMG_TAG
+cd hub-docker
+export IMG_TAG=0
+docker build -t izubkov/cmap:$IMG_TAG .
+sudo docker push izubkov/cmap:$IMG_TAG
 ```
 
 ## Run locally:
