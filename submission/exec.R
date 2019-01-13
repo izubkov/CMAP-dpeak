@@ -118,27 +118,6 @@ run_alg <- function(bid, FI, debug_plate = NULL) {
         NULL
       })
 
-  plot_densities <- function(FI,
-                             fun = function(x) x,
-                             kmeans.result = k) {
-    FI.t <- fun(FI)
-    FI.1 <- FI.t[kmeans.result$cluster == 1]
-    FI.2 <- FI.t[kmeans.result$cluster == 2]
-    ds.0 <- density(FI.t, bw = "SJ", kernel = "gaussian", adjust = 1,
-                    weights = NULL, window = kernel)
-    ds.1 <- density(FI.1, bw = "SJ", kernel = "gaussian", adjust = 1,
-                    weights = NULL, window = kernel)
-    ds.2 <- density(FI.2, bw = "SJ", kernel = "gaussian", adjust = 1,
-                    weights = NULL, window = kernel)
-    max_y <- max(c(ds.0$y, ds.1$y, ds.2$y))
-    plot(ds.0, type = "n", ylim = c(0, max_y*1.1))
-    lines(ds.0, col = "black")
-    lines(ds.1, col = "green")
-    lines(ds.2, col = "red")
-  }
-  # plot_densities(FI)
-  # plot_densities(FI, log)
-
   if(is.null(k)) {
     hi <- lo <- median(FI)
   } else {
@@ -151,8 +130,8 @@ run_alg <- function(bid, FI, debug_plate = NULL) {
     } else {
       # TODO: read sources, figure out
       ds.1 <- ds.2 <- data.frame(y = 0)
-      ds.1 <- try(density(FI.1, bw = "SJ", kernel = "gaussian", adjust = 1, weights = NULL, window = kernel))
-      ds.2 <- try(density(FI.2, bw = "SJ", kernel = "gaussian", adjust = 1, weights = NULL, window = kernel))
+      ds.1 <- try(density(FI.1, bw = "SJ", kernel = "gaussian", n = 64))
+      ds.2 <- try(density(FI.2, bw = "SJ", kernel = "gaussian", n = 64))
       beads.1 <- length(FI.1)
       beads.2 <- length(FI.2)
 
@@ -196,14 +175,6 @@ run_alg <- function(bid, FI, debug_plate = NULL) {
       }
     }
   }
-
-  # # detect peaks
-  # FI.log2 <- log(FI, 2)
-  # # "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine"
-  # ds <- density(FI.log2, bw = "SJ", adjust = 1,
-  #               kernel = "gaussian",
-  #               weights = NULL, window = kernel)
-  # plot(ds)
 
   genes <-
     barcode_to_gene_map.txt %>%
@@ -270,6 +241,36 @@ gct <- new("GCT", mat=mat)
 print("Saving GCT...")
 gct %>%
   cmapR::write.gct(str_c(opt$out, "/", output_name, ".gct"), appenddim = F)
+
+# plot density ------------------------------------------------------------
+
+plot_densities <- function(FI,
+                           fun = function(x) x,
+                           kmeans.result = k) {
+  FI.t <- fun(FI)
+  FI.1 <- FI.t[kmeans.result$cluster == 1]
+  FI.2 <- FI.t[kmeans.result$cluster == 2]
+  ds.0 <- density(FI.t, bw = "SJ", kernel = "biweight", adjust = 1)
+  ds.1 <- density(FI.1, bw = "SJ", kernel = "biweight", adjust = 1)
+  ds.2 <- density(FI.2, bw = "SJ", kernel = "biweight", adjust = 1)
+  max_y <- max(c(ds.0$y, ds.1$y, ds.2$y))
+  plot(ds.0, type = "n", ylim = c(0, max_y*1.1))
+  lines(ds.0, col = "black")
+  lines(ds.1, col = "green")
+  lines(ds.2, col = "red")
+}
+# plot_densities(FI)
+# plot_densities(FI, log)
+
+# TODO --------------------------------------------------------------------
+
+# # detect peaks
+# FI.log2 <- log(FI, 2)
+# # "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine"
+# ds <- density(FI.log2, bw = "SJ", adjust = 1,
+#               kernel = "gaussian",
+#               weights = NULL, window = kernel)
+# plot(ds)
 
 # all plates --------------------------------------------------------------
 
