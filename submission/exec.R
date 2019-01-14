@@ -127,14 +127,14 @@ run_alg <- function(bid, FI, plate_name = NULL) {
 
   if(is.null(k)) {
     hi <- lo <- median(FI)
-    dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "is.null(k)")
+    #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "is.null(k)")
   } else {
     FI.1 <- FI[k$cluster == 1]
     FI.2 <- FI[k$cluster == 2]
 
     if(length(FI.1) < 2 || length(FI.2) < 2) {
       hi <- lo <- median(FI)
-      dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "length(FI.n) < 2")
+      #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "length(FI.n) < 2")
     } else {
       # TODO: remove (?)
       ds.1 <- ds.2 <- data.frame(y = 0)
@@ -151,22 +151,22 @@ run_alg <- function(bid, FI, plate_name = NULL) {
           # sure the first cluster is high_prop
           hi <- median(FI[k$cluster == 1])
           lo <- median(FI[k$cluster == 2])
-          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:1")
+          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:1")
         } else if(peak.1 < peak.2 && beads.1 < beads.2) {
           # sure the second cluster is high_prop
           hi <- median(FI[k$cluster == 2])
           lo <- median(FI[k$cluster == 1])
-          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:2")
+          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:2")
         } else {
           # unsure case
           if(beads.1 > beads.2) {
             hi <- median(FI[k$cluster == 1])
             lo <- median(FI[k$cluster == 2])
-            dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:1")
+            #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:1")
           } else {
             hi <- median(FI[k$cluster == 2])
             lo <- median(FI[k$cluster == 1])
-            dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:2")
+            #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:2")
           }
         }
       } else {
@@ -174,11 +174,11 @@ run_alg <- function(bid, FI, plate_name = NULL) {
         if(beads.1 > beads.2) {
           hi <- median(FI[k$cluster == 1])
           lo <- median(FI[k$cluster == 2])
-          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:1")
+          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:1")
         } else {
           hi <- median(FI[k$cluster == 2])
           lo <- median(FI[k$cluster == 1])
-          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:2")
+          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:2")
         }
       }
     }
