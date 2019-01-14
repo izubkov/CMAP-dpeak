@@ -1,9 +1,7 @@
 #!/usr/bin/env Rscript
 
 #
-# TODO: foreach for parallel execution
 # TODO: Gmeadian
-# TODO: higher peak means higher proportion
 #
 
 # installed with cmapR
@@ -18,11 +16,6 @@ library(magrittr)
 library(purrr)
 library(readr)
 library(stringr)
-
-# do not import into final submission
-#library(tidyverse)
-#library(tictoc)
-#library(pryr)
 
 args_spec <- matrix(c(
   "dspath",        "x", 1, "character",
@@ -74,7 +67,14 @@ barcodes_to_skip <-
   filter(n < 2) %>%
   .[["barcode_id"]]
 
-run_alg <- function(bid, FI, debug_plate = NULL) {
+# debug statistics
+dstat <-
+  data.frame(bid = integer(),
+             plate_name = character(),
+             reason = character(),
+             stringsAsFactors = F)
+
+run_alg <- function(bid, FI, plate_name = NULL) {
   # fc <- new("flexclustControl", iter.max = 10, verbose = 1,
   #           initcent = "kmeanspp")
   # cc <- cclust(FI, 2, dist = "euclidean", method = "kmeans",
@@ -120,15 +120,16 @@ run_alg <- function(bid, FI, debug_plate = NULL) {
 
   if(is.null(k)) {
     hi <- lo <- median(FI)
+    dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "is.null(k)")
   } else {
     FI.1 <- FI[k$cluster == 1]
     FI.2 <- FI[k$cluster == 2]
 
     if(length(FI.1) < 2 || length(FI.2) < 2) {
       hi <- lo <- median(FI)
-      #cat("Bad clusters:", bid, debug_plate, "(", length(FI.1), length(FI.2), ")", "\n")
+      dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "length(FI.n) < 2")
     } else {
-      # TODO: read sources, figure out
+      # TODO: remove (?)
       ds.1 <- ds.2 <- data.frame(y = 0)
       ds.1 <- try(density(FI.1, bw = "SJ", kernel = "gaussian", n = 64))
       ds.2 <- try(density(FI.2, bw = "SJ", kernel = "gaussian", n = 64))
@@ -143,34 +144,34 @@ run_alg <- function(bid, FI, debug_plate = NULL) {
           # sure the first cluster is high_prop
           hi <- median(FI[k$cluster == 1])
           lo <- median(FI[k$cluster == 2])
+          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:1")
         } else if(peak.1 < peak.2 && beads.1 < beads.2) {
           # sure the second cluster is high_prop
           hi <- median(FI[k$cluster == 2])
           lo <- median(FI[k$cluster == 1])
+          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:2")
         } else {
           # unsure case
-          if(!is.null(debug_plate)) {
-            #cat("UNSURE:", bid, debug_plate, "\n")
-          }
           if(beads.1 > beads.2) {
             hi <- median(FI[k$cluster == 1])
             lo <- median(FI[k$cluster == 2])
+            dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:1")
           } else {
             hi <- median(FI[k$cluster == 2])
             lo <- median(FI[k$cluster == 1])
+            dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:2")
           }
         }
       } else {
         # unsure case
-        if(!is.null(debug_plate)) {
-          #cat("UNSURE:", bid, debug_plate, "\n")
-        }
         if(beads.1 > beads.2) {
           hi <- median(FI[k$cluster == 1])
           lo <- median(FI[k$cluster == 2])
+          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:1")
         } else {
           hi <- median(FI[k$cluster == 2])
           lo <- median(FI[k$cluster == 1])
+          dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:2")
         }
       }
     }
@@ -219,10 +220,10 @@ single_plate_processing <- function(filename) {
 
 registerDoParallel(cores = detectCores(all.tests = T))
 cols <-
-  # foreach(filename = DATA.files) %do%
-  #   single_plate_processing(filename)
-  foreach(filename = DATA.files) %dopar%
+  foreach(filename = DATA.files) %do%
     single_plate_processing(filename)
+  # foreach(filename = DATA.files) %dopar%
+  #   single_plate_processing(filename)
 mat <- matrix(cols %>% unlist(),
               nrow = length(cols[[1]]),
               ncol = length(DATA.plates))
@@ -242,25 +243,9 @@ print("Saving GCT...")
 gct %>%
   cmapR::write.gct(str_c(opt$out, "/", output_name, ".gct"), appenddim = F)
 
-# plot density ------------------------------------------------------------
+# save DEBUG --------------------------------------------------------------
 
-plot_densities <- function(FI,
-                           fun = function(x) x,
-                           kmeans.result = k) {
-  FI.t <- fun(FI)
-  FI.1 <- FI.t[kmeans.result$cluster == 1]
-  FI.2 <- FI.t[kmeans.result$cluster == 2]
-  ds.0 <- density(FI.t, bw = "SJ", kernel = "biweight", adjust = 1)
-  ds.1 <- density(FI.1, bw = "SJ", kernel = "biweight", adjust = 1)
-  ds.2 <- density(FI.2, bw = "SJ", kernel = "biweight", adjust = 1)
-  max_y <- max(c(ds.0$y, ds.1$y, ds.2$y))
-  plot(ds.0, type = "n", ylim = c(0, max_y*1.1))
-  lines(ds.0, col = "black")
-  lines(ds.1, col = "green")
-  lines(ds.2, col = "red")
-}
-# plot_densities(FI)
-# plot_densities(FI, log)
+save(dstat, file = "dstat.RData")
 
 # TODO --------------------------------------------------------------------
 
@@ -271,111 +256,3 @@ plot_densities <- function(FI,
 #               kernel = "gaussian",
 #               weights = NULL, window = kernel)
 # plot(ds)
-
-# all plates --------------------------------------------------------------
-
-plates_all_processing <- function(d.all, debug = F) {
-
-  run_kmeans <- function(f, li) {
-    k <- do.call(what = f, args = li)
-  }
-
-  res <- list()
-
-  bs <-
-    d.all %>%
-    distinct(barcode_id) %>%
-    .[["barcode_id"]]
-
-  for(i in seq_along(1:length(bs))) {
-
-    bid <- bs[i]
-
-    xs <-
-      d.all %>%
-      filter(barcode_id == bid) %>%
-      .[["FI"]]
-
-    li <- list(x = xs, centers = 2, algorithm = "MacQueen")
-
-    k <-
-      tryCatch(
-        { run_kmeans(kmeans, li) },
-        warning = function(w) {
-          # When kmeans does not converges it prints warning and
-          # does not returns anything so k still points to prev. value.
-          # Use plate-wide median.
-          if(debug) {
-            cat("Closure", address(k), "\n")
-            cat(bid, "does not converges in 10 iterations\n")
-          }
-          med <- median(xs)
-          list(size = -1, centers = med)
-        })
-
-    # assign clusters
-    if(k$size == -1) {
-      hi <- lo <- k$centers
-    } else {
-      x.1 <- xs[k$cluster == 1]
-      x.2 <- xs[k$cluster == 1]
-      max.1 <- max(x.1)
-      max.2 <- max(x.2)
-
-      if(max.1 > max.2) {
-        hi <- median(xs[k$cluster == 1])
-        lo <- median(xs[k$cluster == 2])
-      } else {
-        hi <- median(xs[k$cluster == 2])
-        lo <- median(xs[k$cluster == 1])
-      }
-    }
-
-    genes <- barcode_to_gene_map.txt %>% filter(barcode_id == bid)
-    if(nrow(genes) == 2) { # exclude barcodes 11 and 499
-      gene.hi <-
-        genes[genes$high_prop == 1, ] %>%
-        .[["gene_id"]] %>%
-        as.character()
-      gene.lo <-
-        genes[genes$high_prop == 0, ] %>%
-        .[["gene_id"]] %>%
-        as.character()
-
-      res[gene.hi] <- hi
-      res[gene.lo] <- lo
-    }
-  }
-  res
-}
-#sol <- plates_all_processing(DATA.all.txt, debug = T)
-
-#temp_gct <-
-#  cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct"))
-#
-#m <- ncol(temp_gct@mat)
-#for(r in rownames(temp_gct@mat)) {
-#  val <- sol[r][[1]]
-#  temp_gct@mat[r,] <- rep(val, m) + rnorm(m)
-#}
-#
-#print("Saving GCT...")
-#temp_gct %>%
-#  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
-
-
-# read/write 100% accuracy ------------------------------------------------
-
-#cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
-#  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
-
-# install -----------------------------------------------------------------
-
-#BiocManager::install("rhdf5") # also install/update callr, mgcv, codetools
-#devtools::install_local("competitor_pack_v2/scorer/cmapR")
-
-# clear warnings
-#assign("last.warning", NULL, envir = baseenv())
-
-# stop on warnings
-#options(warn = 2)
