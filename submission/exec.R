@@ -94,13 +94,18 @@ run_alg <- function(bid, FI, plate_name = NULL) {
     z
   }
 
-  # TODO: sample from peaks/maximum values?
   # TODO: different distance (manhattan)?
   # TODO: try oversampling
-  kmeanspp <- function(x, k = 2, family = NULL)
+  kmeanspp <- function(x, k = 2, start = "max")
   {
     centers <- matrix(0, nrow=k, ncol=ncol(x))
-    centers[1,] <- x[sample(1:nrow(x), 1), , drop=FALSE]
+    if(start == "max") {
+      h <- hist(x, breaks = length(x))
+      mx <- h$breaks[h$counts == max(h$counts)]
+      centers[1,] <- sample(mx, 1)
+    } else if(start == "rand") {
+      centers[1,] <- x[sample(1:nrow(x), 1), , drop=FALSE]
+    }
     d <- distEuclidean(x, centers[1L,,drop=FALSE])^2
     for(l in 2:k){
       centers[l,] <- x[sample(1:nrow(x), 1, prob=d), , drop=FALSE]
@@ -113,7 +118,7 @@ run_alg <- function(bid, FI, plate_name = NULL) {
     tryCatch(
       {
         set.seed(42)
-        cs <- kmeanspp(as.matrix(FI), 2)
+        cs <- kmeanspp(as.matrix(FI), 2, start = "max")
         kmeans(x = FI, centers = cs, algorithm = "Lloyd")
       },
       warning = function(w) {
