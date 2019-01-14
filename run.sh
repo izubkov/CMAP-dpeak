@@ -28,22 +28,35 @@ exec_test() {
       --plate $1
 }
 
-START_TIME=`date +%s`
-exec_test $TEST_CASE_1
-MID_TIME=`date +%s`
-exec_test $TEST_CASE_2
-END_TIME=`date +%s`
+if [ "$1" == "--dry" ]
+then
+  echo "Dry run..."
+  START_TIME=`date +%s`
+  exec_test $TEST_CASE_1
+  MID_TIME=`date +%s`
+  TEST_TIME_1=$((MID_TIME-START_TIME))
+  echo "Test #1 time [sec] =" $TEST_TIME_1
+  exit 0
+else
+  echo "Scoring run..."
+  START_TIME=`date +%s`
+  exec_test $TEST_CASE_1
+  MID_TIME=`date +%s`
+  exec_test $TEST_CASE_2
+  END_TIME=`date +%s`
 
-TEST_TIME_1=$((MID_TIME-START_TIME))
-TEST_TIME_2=$((END_TIME-MID_TIME))
+  TEST_TIME_1=$((MID_TIME-START_TIME))
+  TEST_TIME_2=$((END_TIME-MID_TIME))
 
-echo "Test #1 time [sec] =" $TEST_TIME_1
-echo "Test #2 time [sec] =" $TEST_TIME_2
+  echo "Test #1 time [sec] =" $TEST_TIME_1
+  echo "Test #2 time [sec] =" $TEST_TIME_2
 
-################################################################################
-# Scoring.
+  ################################################################################
+  # Scoring.
 
-docker run --rm \
-  -v $(pwd)/output:/workdir \
-  -v $(pwd)/ground-truth:/ground-truth \
-  cmap/scorer $TEST_CASE_1 $TEST_CASE_2 $TEST_TIME_1 $TEST_TIME_2
+  docker run --rm \
+    -v $(pwd)/output:/workdir \
+    -v $(pwd)/ground-truth:/ground-truth \
+    cmap/scorer $TEST_CASE_1 $TEST_CASE_2 $TEST_TIME_1 $TEST_TIME_2
+  exit 0
+fi
