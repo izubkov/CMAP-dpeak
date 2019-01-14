@@ -49,3 +49,8 @@ plot_ly(x = rep(1:61, 16), y = rep(61:1, times = 1, each = 61),
         z = COR, type = "heatmap", text = ~names(COR))
 
 # histograms --------------------------------------------------------------
+
+# read/write 100% accuracy ------------------------------------------------
+
+#cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
+#  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
