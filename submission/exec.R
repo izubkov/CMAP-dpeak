@@ -80,6 +80,8 @@ run_alg <- function(bid, FI, plate_name = NULL) {
   # cc <- cclust(FI, 2, dist = "euclidean", method = "kmeans",
   #              control = fc)
 
+  FI <- FI[FI > 10] # filter low threshold
+
   distEuclidean <- function(x, centers)
   {
     if(ncol(x)!=ncol(centers))
@@ -220,10 +222,10 @@ single_plate_processing <- function(filename) {
 
 registerDoParallel(cores = detectCores(all.tests = T))
 cols <-
-  foreach(filename = DATA.files) %do%
-    single_plate_processing(filename)
-  # foreach(filename = DATA.files) %dopar%
+  # foreach(filename = DATA.files) %do%
   #   single_plate_processing(filename)
+  foreach(filename = DATA.files) %dopar%
+    single_plate_processing(filename)
 mat <- matrix(cols %>% unlist(),
               nrow = length(cols[[1]]),
               ncol = length(DATA.plates))
@@ -245,7 +247,7 @@ gct %>%
 
 # save DEBUG --------------------------------------------------------------
 
-save(dstat, file = "dstat.RData")
+#save(dstat, file = "dstat.RData")
 
 # TODO --------------------------------------------------------------------
 

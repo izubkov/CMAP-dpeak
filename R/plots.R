@@ -1,3 +1,5 @@
+require(plotly)
+
 # plot density ------------------------------------------------------------
 
 plot_densities <- function(FI,
