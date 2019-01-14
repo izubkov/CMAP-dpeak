@@ -100,7 +100,7 @@ run_alg <- function(bid, FI, plate_name = NULL) {
   {
     centers <- matrix(0, nrow=k, ncol=ncol(x))
     if(start == "max") {
-      h <- hist(x, breaks = length(x))
+      h <- hist(x, breaks = length(x), plot = F)
       mx <- h$breaks[h$counts == max(h$counts)]
       centers[1,] <- sample(mx, 1)
     } else if(start == "rand") {
