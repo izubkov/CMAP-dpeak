@@ -136,51 +136,37 @@ run_alg <- function(bid, FI, plate_name = NULL) {
       hi <- lo <- median(FI)
       #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "length(FI.n) < 2")
     } else {
-      # TODO: remove (?)
-      ds.1 <- ds.2 <- data.frame(y = 0)
-      ds.1 <- try(density(FI.1, bw = "SJ", kernel = "gaussian", n = 64))
-      ds.2 <- try(density(FI.2, bw = "SJ", kernel = "gaussian", n = 64))
+      h.1 <- hist(FI.1, breaks = length(FI.1), plot = F)
+      h.2 <- hist(FI.2, breaks = length(FI.2), plot = F)
+      peak.1 <- h.1$breaks[h.1$counts == max(h.1$counts)][1]
+      peak.2 <- h.2$breaks[h.2$counts == max(h.2$counts)][1]
       beads.1 <- length(FI.1)
       beads.2 <- length(FI.2)
 
-      if(!is.atomic(ds.1) && !is.atomic(ds.2)) {
-        peak.1 <- max(ds.1$y)
-        peak.2 <- max(ds.2$y)
-
-        if(peak.1 > peak.2 && beads.1 > beads.2) {
-          # sure the first cluster is high_prop
-          hi <- median(FI[k$cluster == 1])
-          lo <- median(FI[k$cluster == 2])
-          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:1")
-        } else if(peak.1 < peak.2 && beads.1 < beads.2) {
-          # sure the second cluster is high_prop
-          hi <- median(FI[k$cluster == 2])
-          lo <- median(FI[k$cluster == 1])
-          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:2")
-        } else {
-          # unsure case
-          if(beads.1 > beads.2) {
-            hi <- median(FI[k$cluster == 1])
-            lo <- median(FI[k$cluster == 2])
-            #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:1")
-          } else {
-            hi <- median(FI[k$cluster == 2])
-            lo <- median(FI[k$cluster == 1])
-            #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:2")
-          }
-        }
+      if(peak.1 > peak.2 && beads.1 > beads.2) {
+        # sure the first cluster is high_prop
+        hi <- median(FI[k$cluster == 1])
+        lo <- median(FI[k$cluster == 2])
+        #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:1")
+      } else if(peak.1 < peak.2 && beads.1 < beads.2) {
+        # sure the second cluster is high_prop
+        hi <- median(FI[k$cluster == 2])
+        lo <- median(FI[k$cluster == 1])
+        #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "sure:2")
       } else {
         # unsure case
         if(beads.1 > beads.2) {
           hi <- median(FI[k$cluster == 1])
           lo <- median(FI[k$cluster == 2])
-          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:1")
+          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:1")
         } else {
           hi <- median(FI[k$cluster == 2])
           lo <- median(FI[k$cluster == 1])
-          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "non_atomic:2")
+          #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:2")
         }
       }
+
+      # END OF: good clusters
     }
   }
 
