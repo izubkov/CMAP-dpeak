@@ -50,6 +50,25 @@ plot_ly(x = rep(1:61, 16), y = rep(61:1, times = 1, each = 61),
 
 # histograms --------------------------------------------------------------
 
+
+# DEBUG stats -------------------------------------------------------------
+
+load("dstat.RData")
+
+# overview
+dstat %>%
+  group_by(reason) %>%
+  count() %>%
+  arrange(desc(n))
+
+# persentage of bad clusters (max = 39.1 %)
+dstat %>%
+  group_by(bid) %>%
+  summarize(
+    bad_clusters =
+      sum(reason %in% c("is.null(k)", "length(FI.n) < 2")) / n * 100) %>%
+  arrange(desc(bad_clusters))
+
 # read/write 100% accuracy ------------------------------------------------
 
 #cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
