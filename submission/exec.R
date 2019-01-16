@@ -92,7 +92,7 @@ run_alg <- function(bid, FI, plate_name = NULL) {
 
   # TODO: different distance (manhattan)?
   # TODO: try oversampling
-  kmeanspp <- function(x, k = 2, start = "max")
+  kmeanspp <- function(x, k = 2, start = "rand")
   {
     centers <- matrix(0, nrow=k, ncol=ncol(x))
     if(start == "max") {
@@ -114,8 +114,8 @@ run_alg <- function(bid, FI, plate_name = NULL) {
     tryCatch(
       {
         set.seed(42)
-        cs <- kmeanspp(as.matrix(FI), 2, start = "max")
-        kmeans(x = FI, centers = cs, algorithm = "Lloyd")
+        cs <- kmeanspp(as.matrix(FI), 2)
+        kmeans(x = FI, centers = cs, algorithm = "Lloyd", iter.max = 15)
       },
       warning = function(w) {
         NULL
