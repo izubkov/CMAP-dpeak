@@ -20,54 +20,65 @@ h <- hist(FI.s, breaks = length(FI.s), plot = F)
 br <- h$breaks[2] - h$breaks[1]
 mid <- h$mids[which(h$counts == max(h$counts))]
 mx <- max(Filter(function(x) mid <= x && x <= mid + br, FI.s))
+
+# first value
 a[1] <- mx
-idx <- which(FI.s == mx)[1]
+
 # remove it from array
+idx <- which(FI.s == mx)[1]
 FI.s <- FI.s[-idx]
+
 # latest point from current cluster
 last <- a[1]
 
-is.b <- T
-b.skipping <- T
+calc_a_b <- function(a, b, FI.s, last) {
+  is.b <- T
+  b.skipping <- T
 
-while(length(FI.s) > 1) {
-  # next step
-  p <- sample(FI.s, 1, prob = sapply(FI.s, function(x, c, xs) { (c - x)^2 / sum( (xs - c)^2 ) }, c = last, xs = FI.s) )
-  p
-  idx <- which(FI.s == p)[1]
-  FI.s <- FI.s[-idx]
-  if(is.b) {
-    if(b.skipping) {
-      # add to a
-      p <- sample(FI.s, 1, prob = sapply(FI.s, function(x, c, xs) { (c - x)^2 / sum( (xs - c)^2 ) }, c = p, xs = FI.s) )
-      idx <- which(FI.s == p)[1]
+  while(length(FI.s) > 1) {
+    # next step
+    p <- sample(FI.s, 1, prob = sapply(FI.s, function(x, c, xs) { (c - x)^2 / sum( (xs - c)^2 ) }, c = last, xs = FI.s) )
+    p
+    idx <- which(FI.s == p)[1]
+    if(is.b) {
+      if(b.skipping) {
+        # add to a
+        p <- sample(FI.s, 1, prob = sapply(FI.s, function(x, c, xs) { (c - x)^2 / sum( (xs - c)^2 ) }, c = p, xs = FI.s) )
+        idx <- which(FI.s == p)[1]
+        FI.s <- FI.s[-idx]
+        a[length(a) + 1] <- p
+        #is.b <- F
+        last <- p
+
+        b.skipping <- F
+      } else {
+        FI.s <- FI.s[-idx]
+        b[length(b) + 1] <- p
+        is.b <- F
+        b.skipping <- T
+        last <- p
+      }
+    } else {
       FI.s <- FI.s[-idx]
       a[length(a) + 1] <- p
-      #is.b <- F
-      last <- p
-
-      b.skipping <- F
-    } else {
-      b[length(b) + 1] <- p
-      is.b <- F
-      b.skipping <- T
+      is.b <- T
       last <- p
     }
-  } else {
-    a[length(a) + 1] <- p
-    is.b <- T
-    last <- p
+    a; b
   }
-  a; b
+
+  FI.s
+
+  if(is.a) {
+    a[length(a) + 1] <- FI.s
+  } else {
+    b[length(b) + 1] <- FI.s
+  }
+
+  plot_clusters(a, b, FI)
+  length(a); length(b)
+  list(a, b)
 }
 
-FI.s
-
-if(is.a) {
-  a[length(a) + 1] <- FI.s
-} else {
-  b[length(b) + 1] <- FI.s
-}
-
-plot_clusters(a, b, FI)
-length(a); length(b)
+li <- calc_a_b(a, b, FI.s, last)
+li <- calc_a_b(b, a, FI.s, last)
