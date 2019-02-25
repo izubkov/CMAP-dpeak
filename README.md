@@ -1,84 +1,28 @@
-## Publish new docker:
+### CMAP-dpeak
 
-``` bash
-cd hub-docker
-export IMG_TAG=0
-docker build -t izubkov/cmap:$IMG_TAG .
-sudo docker push izubkov/cmap:$IMG_TAG
-```
+Peak deconvolution algorithm to extract gene expression levels. Outperforms original Harvard Medical School algorithm, +18% to accuracy and execution time.
 
-## Run locally:
+> The goal of the Connectivity Map (CMap) is to build a resource of gene expression profiles to aid biomedical research and therapeutic discovery. The core CMap technology is an assay called L1000, which measures gene expression changes in cells. L1000 achieves a significant increase in throughput and a significant decrease in cost as compared to other gene expression technologies due in large part to the practice of measuring two genes using the same physical material (in this case, microscopic beads). After data collection, the expression values of the two genes are computationally extracted in a process called "peak deconvolution". The current implementation, an algorithm called D-Peak, is effective but imperfect, and hence the aim of this contest is to improve D-Peak, which we hypothesize will enable CMap to produce higher quality data more efficiently.
 
-``` bash
-./run.sh
-```
+![1.png](https://lh3.googleusercontent.com/560LxnDXqbeYFCDt2OhLto8VHOCAfSIackvMa8ozpaXQltrJamOYI_2qYY8DwyJXDBkKO5ydt2fd-xjzI-XbLFbSmbXKitlER0FJFe8VIWsdc5fCkeOgyzWHlgCSvZt48Npw9pgM)
 
-## Make submission:
+D-Peak algorithm schematics
 
-``` bash
-./run.sh
-cd solution
-# zip solution & submit
-```
+![4.png](https://lh3.googleusercontent.com/-wtQ7pv4eLKwV3-AvHrkxmak3psQPbsHzCMEssbPxQYelMfqoPkNaLOGvTWjUGJmfbxq_DR_6Bau0MtfMNQhxk3VfAhAQ54R0erAP1s-XmFxRGIztRpPl7M-Wj89nGWngWWzY0xq)
 
-# Baseline:
+D-Peak error modes (*)
 
-```
-Test #1 time [sec] = 163
-Test #2 time [sec] = 161
+![2.png](https://lh5.googleusercontent.com/IqTt4KC_thCmx27xGYcsXYRRzkLdcw3Vvx75HkheMt2myty3XbCB-CEgduqgCpY02s9gwQs2EsuByxoPyZys0QfV5Pf8U6C4Y1AHjjsL_pkyM3UQDDTOXYOexHFS4vWrGg5WzRY4)
 
-DPK:
+Accuracy scoring schematic (*)
 
-Median Spearman correlation: 0.701
-AUC (hi and lo): 0.92 and 0.921
-Overall accuracy score 1e6 * COR * AUC = 645653.205832184
+![3.png](https://lh6.googleusercontent.com/yZcyA6oOtnDa5D21z_dAfRxNHZx2pankRLsSyfmUt7RTIGuvSirCHwm7x1gJG5V1u45O9SlSaAEs5AaIMtvFJggMj5lxVAqghocRSYFAp-wTSP13xl8_AkNVLwqAJ2GulddgQC_B)
 
-LIT:
+Luminex detection schematic (*)
 
-Median Spearman correlation: 0.819
-AUC (hi and lo): 0.904 and 0.926
-Overall accuracy score 1e6 * COR * AUC = 749249.376560217
+-----
 
-OVERALL SCORE = 421009.415034549
-```
+References:
 
-### dpeak matlab routine:
-
-constants and params (detect_lxb_peaks_single):
-
-https://github.com/cmap/cmapM/blob/db40b0af5d3440c43bc4e8c6947399d9432cbc43/%2Bcmapm/%40Pipeline/private/detect_lxb_peaks_single.m#L49
-
-ksdensity (kernel smoothing based on normal kernel function)
-
-https://www.mathworks.com/help/stats/ksdensity.html
-
-findpeaks
-
-www.mathworks.com/help/signal/ref/findpeaks.html
-
-UNI:
-
-github.com/cmap/cmapM/blob/db40b0af5d3440c43bc4e8c6947399d9432cbc43/%2Bcmapm/%40Pipeline/private/dpeak_pipe.m#L62
-
-
-
-
-Running
- > nohup  /cmap/tools/sig_tools/run_sig_dpeak_tool.sh /cmap/tools/sig_tools/mcr/versions/v84 --dspath /input/DPK.CP001_A549_24H_X1_B42 --out /output --create_subdir 0 --plate DPK.CP001_A549_24H_X1_B42 
-
-
-TEST_CASE_1="DPK.CP001_A549_24H_X1_B42"
-TEST_CASE_2="LITMUS.KD017_A549_96H_X1_B42"
-
-exec_test() {
-  docker run --rm -it \
-    -v $(pwd)/input:/input \
-    -v $(pwd)/output:/output \
-    cmap/solution \
-      --dspath /input/$1 \
-      --out /output \
-      --create_subdir 0 \
-      --plate $1
-}
-
-"При анализе данных, полученных с использованием микрочипов, полученные измерения трактуют как непрерывные величины (лог-нормальное распределение). При анализе данных RNA-Seq, получаемые значения количества картируемых фрагментов натуральные, для анализа случайную величину принимают распределенной по Пуассону, как обратное биномиальное и даже бета-биномиальное."
+* original algorithm: https://github.com/cmap/cmapM
+* (*) contest (images and quotations source): https://www.topcoder.com/challenges/30076905

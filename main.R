@@ -1,14 +1,10 @@
 #!/usr/bin/env Rscript
 
-#
-# TODO: Gmeadian
-#
-
 # installed with cmapR
 library(dplyr)
 library(cmapR)
 
-# installed with submission
+# installed with docker
 library(doParallel)
 library(foreach)
 library(getopt)
@@ -16,6 +12,8 @@ library(magrittr)
 library(purrr)
 library(readr)
 library(stringr)
+
+source("R/kmeanspp.R")
 
 args_spec <- matrix(c(
   "dspath",        "x", 1, "character",
@@ -49,8 +47,8 @@ DATA.plates <-
     unlist()
   }
 
-# DATA.all.txt <-
-#   map_dfr(DATA.files, read_tsv)
+DATA.all.txt <-
+  map_dfr(DATA.files, read_tsv)
 
 barcode_to_gene_map.txt <-
   read_tsv("barcode_to_gene_map.txt", col_types = "iii")
@@ -75,40 +73,7 @@ dstat <-
 
 run_alg <- function(bid, FI, plate_name = NULL) {
 
-  # TODO: filter upper threshold (?)
   FI <- FI[FI > 10] # filter lower threshold
-
-  distEuclidean <- function(x, centers)
-  {
-    if(ncol(x)!=ncol(centers))
-      stop(sQuote("x")," and ",sQuote("centers"),
-           " must have the same number of columns")
-    z <- matrix(0, nrow=nrow(x), ncol=nrow(centers))
-    for(k in 1:nrow(centers)){
-      z[,k] <- sqrt( colSums((t(x) - centers[k,])^2) )
-    }
-    z
-  }
-
-  # TODO: different distance (manhattan)?
-  # TODO: try oversampling
-  kmeanspp <- function(x, k = 2, start = "rand")
-  {
-    centers <- matrix(0, nrow=k, ncol=ncol(x))
-    if(start == "max") {
-      h <- hist(x, breaks = length(x), plot = F)
-      mx <- h$breaks[h$counts == max(h$counts)]
-      centers[1,] <- sample(mx, 1)
-    } else if(start == "rand") {
-      centers[1,] <- x[sample(1:nrow(x), 1), , drop=FALSE]
-    }
-    d <- distEuclidean(x, centers[1L,,drop=FALSE])^2
-    for(l in 2:k){
-      centers[l,] <- x[sample(1:nrow(x), 1, prob=d), , drop=FALSE]
-      d <- pmin(d, distEuclidean(x, centers[l,,drop=FALSE])^2)
-    }
-    centers
-  }
 
   k <-
     tryCatch(
@@ -123,14 +88,14 @@ run_alg <- function(bid, FI, plate_name = NULL) {
 
   if(is.null(k)) {
     hi <- lo <- -median(FI)
-    #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "is.null(k)")
+    dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "is.null(k)")
   } else {
     FI.1 <- FI[k$cluster == 1]
     FI.2 <- FI[k$cluster == 2]
 
     if(length(FI.1) < 2 || length(FI.2) < 2) {
       hi <- lo <- -median(FI)
-      #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "length(FI.n) < 2")
+      dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "length(FI.n) < 2")
     } else {
       beads.1 <- length(FI.1)
       beads.2 <- length(FI.2)
@@ -139,14 +104,12 @@ run_alg <- function(bid, FI, plate_name = NULL) {
       if(beads.1 > beads.2) {
         hi <- median(FI[k$cluster == 1])
         lo <- median(FI[k$cluster == 2])
-        #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:1")
+        dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:1")
       } else {
         hi <- median(FI[k$cluster == 2])
         lo <- median(FI[k$cluster == 1])
-        #dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:2")
+        dstat[nrow(dstat)+1,] <<- c(bid, plate_name, "unsure:2")
       }
-
-      # END OF: good clusters
     }
   }
 
@@ -180,7 +143,7 @@ single_plate_processing <- function(filename) {
     d %>%
     group_by(barcode_id) %>%
     filter(!barcode_id %in% barcodes_to_skip) %>%
-    arrange(barcode_id) %>% # TODO: not arrange but return single column with names
+    arrange(barcode_id) %>%
     split(.$barcode_id)
 
   col <-
@@ -193,8 +156,6 @@ single_plate_processing <- function(filename) {
 
 registerDoParallel(cores = detectCores(all.tests = T))
 cols <-
-  # foreach(filename = DATA.files) %do%
-  #   single_plate_processing(filename)
   foreach(filename = DATA.files) %dopar%
     single_plate_processing(filename)
 mat <- matrix(cols %>% unlist(),
@@ -236,28 +197,6 @@ for(bid in barcodes) {
   }
 }
 
-
-# mat <- apply(t(mat), c(2, 1), function(x) if(x < 0) { -x } else x)
-
-# for(bid in barcodes) {
-#   genes <- genes_by_bids(bid, barcode_to_gene_map.txt)
-#   gene_hi <- genes[1]
-#   gene_lo <- genes[2]
-#   ms.hi <- mat[gene_hi,]
-#   ms.lo <- mat[gene_lo,]
-#   ms.hi <- ms.hi[ms.hi > 0]
-#   ms.lo <- ms.lo[ms.lo > 0]
-#   mean.hi <- mean(ms.hi)
-#   mean.lo <- mean(ms.lo)
-#   for(well in names(ms.hi)) {
-#     hi <- ms.hi[well]
-#     if(hi < 0) {
-#       mat[gene_hi,well] <- mean.hi
-#       mat[gene_lo,well] <- mean.lo
-#     }
-#   }
-# }
-
 # save DATA ---------------------------------------------------------------
 
 output_name <-
@@ -273,14 +212,4 @@ gct %>%
 
 # save DEBUG --------------------------------------------------------------
 
-#save(dstat, file = "dstat.RData")
-
-# TODO --------------------------------------------------------------------
-
-# # detect peaks
-# FI.log2 <- log(FI, 2)
-# # "epanechnikov", "rectangular", "triangular", "biweight", "cosine", "optcosine"
-# ds <- density(FI.log2, bw = "SJ", adjust = 1,
-#               kernel = "gaussian",
-#               weights = NULL, window = kernel)
-# plot(ds)
+save(dstat, file = "dstat.RData")

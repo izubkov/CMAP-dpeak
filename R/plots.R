@@ -17,10 +17,10 @@ plot_densities <- function(FI,
   lines(ds.1, col = "green")
   lines(ds.2, col = "red")
 }
-# plot_densities(FI)
-# plot_densities(FI, log)
+plot_densities(FI)
+plot_densities(FI, log)
 
-# hist. of individual and all ---------------------------------------------
+# hist. of individual samples and plate samples ---------------------------
 
 hist_FI <- function(filenames = DPK.files,
                     ground.gct = DPK.DECONV.uni,

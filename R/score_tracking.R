@@ -1,9 +1,12 @@
-#library(plot3Drgl)
-#f <- function(x,y)
-#  (x^2) * (y^2)
-#x <- y <- seq(0,1,len=20)
-#z <- outer(x, y, f)
-#persp3Drgl(z=z)
+# competitor_pack_2:   351131.7
+# my calculated score: 416177.8
+
+# COR dkp +10% (+0.07) => +8%
+# COR lit +10% (+0.82) => +12%
+# AUC dkp +10% (+0.09) => +8.7%
+# AUC lit +1% (+0.009) => +13%
+# time x163            => +58%
+# time +10% of bench   => +16%
 
 t.bench.dpk <- 163
 t.bench.lit <- 161
@@ -32,15 +35,5 @@ score <- function(COR.dpk, COR.lit, AUC.dpk, AUC.lit, T.dpk, T.lit) {
   lit <- 1e6 * COR.lit^2 * AUC.lit^2 * exp(-T.lit / 3 / t.bench)
   mean(c(dpk, lit))
 }
-# competitor_pack_2: 421009.415034549
-# calculated: 351131.7
 
 score(COR.bench.dpk, COR.bench.lit, AUC.bench.dpk, AUC.bench.lit, t.bench.dpk, t.bench.lit)
-score(COR.bench.dpk, COR.bench.lit, AUC.bench.dpk, AUC.bench.lit, t.bench.dpk, t.bench.lit)
-
-# COR dkp +10% (+0.07) => +8%
-# COR lit +10% (+0.82) => +12%
-# AUC dkp +10% (+0.09) => +8.7%
-# AUC lit +1% (+0.009) => +13%
-# time x163            => +58%
-# time +10% of bench   => +16%

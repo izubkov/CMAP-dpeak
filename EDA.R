@@ -4,12 +4,16 @@ library(plotly)
 library(purrr)
 library(tictoc)
 
+source("R/clusters.R")
+source("R/draft.R")
 source("R/functions.R")
+source("R/score_tracking.R")
 source("R/scoring.R")
+source("R/plots.R")
 
 # load all ----------------------------------------------------------------
 
-source("R/load.R")
+source("R/data.R")
 
 # ground truth ------------------------------------------------------------
 
@@ -48,9 +52,6 @@ COR <- compute_spearman_accuracy(DPK.DECONV.uni, DPK.DECONV.matlab)
 plot_ly(x = rep(1:61, 16), y = rep(61:1, times = 1, each = 61),
         z = COR, type = "heatmap", text = ~names(COR))
 
-# histograms --------------------------------------------------------------
-
-
 # DEBUG stats -------------------------------------------------------------
 
 load("dstat.RData")
@@ -68,8 +69,3 @@ dstat %>%
     bad_clusters =
       sum(reason %in% c("is.null(k)", "length(FI.n) < 2")) / n * 100) %>%
   arrange(desc(bad_clusters))
-
-# read/write 100% accuracy ------------------------------------------------
-
-#cmapR::parse.gctx(str_c("ground-truth/", args[1], "_DECONV_UNI.gct")) %>%
-#  cmapR::write.gct(str_c(args[2], "/", args[1], ".gct"), appenddim = F)
